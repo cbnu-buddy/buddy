@@ -1,0 +1,23 @@
+{
+    "name": "client",
+    "root": "apps/client",
+    "sourceRoot": "apps/client",
+    "projectType": "application",
+    "targets": {
+      "build": {
+        "executor": "@nrwl/next:build",
+        "outputs": ["{options.outputPath}"],
+        "options": {
+          "outputPath": "dist/apps/client"
+        }
+      },
+      "serve": {
+        "executor": "@nrwl/next:server",
+        "options": {
+          "buildTarget": "client:build",
+          "dev": true
+        }
+      }
+    }
+  }
+  
