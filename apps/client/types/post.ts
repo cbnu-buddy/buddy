@@ -1,5 +1,5 @@
-import { CommentInfo } from './comment';
-import { TagInfo } from './tag';
+import { CommentInfo } from "./comment";
+import { TagInfo } from "./tag";
 
 export interface PostInfo {
   postId: number;
@@ -25,4 +25,12 @@ export interface Author {
   memberId: number;
   username: string;
   profileImagePathUrl: string;
+}
+
+// 커뮤니티 게시글 등록/수정 API 호출을 위한 인터페이스 정의
+export interface CreatePostParams {
+  title: string;
+  content: string;
+  tags: string[];
+  serviceIds: number[];
 }
