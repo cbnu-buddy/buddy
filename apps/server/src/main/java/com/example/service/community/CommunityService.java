@@ -20,17 +20,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.example.domain.community.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
@@ -53,8 +60,10 @@ public class CommunityService {
     private final ReplyLikeRepository replyLikeRepository;
     private final PlanRepository planRepository;
 
+    @Value("${github.token}")
+    private String githubToken;
 
-    // 토큰에서 사용자 ID 추출
+  // 토큰에서 사용자 ID 추출
     public String getUserIdFromToken(HttpServletRequest request) {
         Authentication authentication = tokenProvider.getAuthentication(tokenProvider.resolveToken(request));
         Claims claims = tokenProvider.getTokenClaims(tokenProvider.resolveToken(request));
@@ -494,5 +503,50 @@ public class CommunityService {
                 .comments(commentDtos)
                 .likeCount(postLikeCount)
                 .build();
+    }
+
+  /**
+   * 파일 업로드
+   */
+    public ApiResult<?> uploadFile(MultipartFile file) throws Exception {
+      try {
+        // 파일 내용을 Base64로 인코딩
+        String fileContent = Base64.encodeBase64String(file.getBytes());
+
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+          fileExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        }
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String randomUUID = UUID.randomUUID().toString();
+        String fileName = timestamp + "_" + randomUUID + "." + fileExtension;
+
+        String folderPath = "images";
+        String apiUrl = "https://api.github.com/repos/cbnu-buddy/buddy/contents/" + folderPath + "/" + fileName;
+
+        // GitHub API에 보낼 요청 생성
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(githubToken);
+
+        // 요청 바디 생성
+        String jsonBody = String.format("{\"message\": \"upload file\", \"content\": \"%s\"}", fileContent);
+        HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+        // API 호출
+        ResponseEntity<String> response = restTemplate.exchange(apiUrl, HttpMethod.PUT, entity, String.class);
+
+        // 결과 반환
+        if (response.getStatusCode().is2xxSuccessful()) {
+          return ApiResult.success("파일 업로드 성공");
+        } else {
+          throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+      } catch (Exception e) {
+        throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+      }
     }
 }

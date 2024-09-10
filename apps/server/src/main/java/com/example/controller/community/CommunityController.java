@@ -12,7 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -105,4 +107,10 @@ public class CommunityController {
     public ApiResult<?> searchTag(@RequestParam String q, @RequestParam int limit) {
         return communityService.searchTag(q,limit);
     }
+
+  @Operation(summary = "파일 업로드", description = "")
+  @PostMapping(value = "/private/community/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ApiResult<?> uploadFile(@RequestPart("file") MultipartFile file, HttpServletRequest request) throws Exception {
+    return communityService.uploadFile(file);
+  }
 }
