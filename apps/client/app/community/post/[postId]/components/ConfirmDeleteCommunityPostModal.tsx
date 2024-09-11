@@ -33,19 +33,19 @@ export default function ConfirmDeleteCommunityPostModal({
     onError: (error: AxiosError) => {
       const resData: any = error.response;
 
-      console.log(resData);
-      switch (
-        resData?.status
-        // case 409:
-        //   switch (resData?.data.error.status) {
-        //     default:
-        //       alert("정의되지 않은 http code입니다.");
-        //   }
-        //   break;
-        // default:
-        //   alert("정의되지 않은 http status code입니다");
-      ) {
-      }
+      // console.log(resData);
+      // switch (
+      //   resData?.status
+      // case 409:
+      //   switch (resData?.data.error.status) {
+      //     default:
+      //       alert("정의되지 않은 http code입니다.");
+      //   }
+      //   break;
+      // default:
+      //   alert("정의되지 않은 http status code입니다");
+      // ) {
+      // }
     },
     onSuccess: (data) => {
       const httpStatusCode = data.status;
