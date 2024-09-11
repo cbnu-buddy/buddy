@@ -465,7 +465,7 @@ export default function CommunityPost(props: DefaultProps) {
                     href={`/join-party/plan/${
                       partySelectedPlanInfos[service.serviceId - 1]
                         .planDetailInfos[
-                        partySelectedPlanInfos[service.serviceId]
+                        partySelectedPlanInfos[service.serviceId - 1]
                           .planDetailInfos.length - 1
                       ].id
                     }`}
