@@ -11,7 +11,7 @@ export default function EmptyCommentListItem() {
         height="88"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="scale-90"
+        className="scale-75"
       >
         <path
           fill-rule="evenodd"
