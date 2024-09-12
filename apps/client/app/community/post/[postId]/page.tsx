@@ -1,6 +1,5 @@
 "use client";
 
-import { communityPostInfo } from "@/data/mock/communityPostInfos";
 import { PostInfo } from "@/types/post";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -14,15 +13,35 @@ import Link from "next/link";
 import CommentList from "./components/comment/CommentList";
 import { formatDateAndTimeAgo } from "@/utils/formatDate";
 import axiosInstance from "@/utils/axiosInstance";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NotFound from "@/app/[...Not_found]/page";
 import { userInfoStore } from "@/store/UserInfo";
 import { UserInfo } from "@/types/user";
+import { AxiosError } from "axios";
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
   const postId = queryKey[1];
   return axiosInstance.get(`/public/community/posts/${postId}`);
+};
+
+// 커뮤니티 게시글 좋아요 API
+const doLikeCommunityPost = (postId: string) => {
+  return axiosInstance.post(`/private/community/posts/${postId}/like`);
+};
+
+// 커뮤니티 게시글 댓글 작성하기 API
+const addCommunityPostComment = ({
+  postId,
+  comment,
+}: {
+  postId: string;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.post(`/private/posts/${postId}/comment`, requestBody);
 };
 
 interface DefaultProps {
@@ -38,11 +57,94 @@ const MarkdownPreview = dynamic(
 
 export default function CommunityPost(props: DefaultProps) {
   const postId = props.params.postId;
+  const queryClient = useQueryClient();
 
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["communityPostInfo", postId],
     queryFn: fetchCommunityPostInfo,
     retry: 0,
+  });
+
+  const doLikeCommunityPostMutation = useMutation({
+    mutationFn: doLikeCommunityPost,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case "CONFLICT":
+              alert("이미 좋아요된 게시글입니다.");
+              break;
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          // 쿼리 데이터 업데이트
+          // const updatedContestants = [];
+          // queryClient.setQueryData(["communityPostInfo", postId], {
+          //   ...data,
+          //   data: {
+          //     ...data?.data,
+          //     data: {
+          //       ...postInfo,
+          //       contestants: updatedPostInfo,
+          //     },
+          //   },
+          // });
+
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const addCommunityPostCommentMutation = useMutation({
+    mutationFn: addCommunityPostComment,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setIsNewCommentAdded(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
   });
 
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
@@ -81,8 +183,8 @@ export default function CommunityPost(props: DefaultProps) {
   ] = useState<string | undefined>();
 
   const [comment, setComment] = useState<string>("");
-
   const [isCommentEditStatus, setIsCommentEditStatus] = useState(false);
+  const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -199,9 +301,7 @@ export default function CommunityPost(props: DefaultProps) {
 
   const handleSubmit = () => {
     if (comment) {
-      // 등록 버튼 클릭 시의 로직을 여기에 추가
-      alert("등록 버튼이 클릭되었습니다.");
-      setComment("");
+      addCommunityPostCommentMutation.mutate({ postId, comment });
     }
   };
 
@@ -219,6 +319,17 @@ export default function CommunityPost(props: DefaultProps) {
         alert("복사에 실패했습니다.");
       });
   };
+
+  useEffect(() => {
+    if (isNewCommentAdded) {
+      // DOM이 업데이트된 후에만 스크롤을 수행
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+      setIsNewCommentAdded(false);
+    }
+  }, [isNewCommentAdded]); // `data`가 업데이트되면 실행됨
 
   if (isError) return <NotFound />;
   if (isPending) return <Loading />;
@@ -381,7 +492,9 @@ export default function CommunityPost(props: DefaultProps) {
                   </div>
 
                   <button
-                    onClick={() => setIsLikedPost((prev) => !prev)}
+                    onClick={() => {
+                      doLikeCommunityPostMutation.mutate(postId);
+                    }}
                     className={`relative ml-[-0.25rem] flex items-center bg-[#f2f4f6] text-[#4e5968] rounded-full px-2 py-[0.3rem] ${
                       isLikedPost && "outline outline-1 outline-[#3a8af9]"
                     }`}
