@@ -3,7 +3,7 @@
 import { PostInfo } from "@/types/post";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Toast } from "flowbite-react";
 import ConfirmDeleteCommunityPostModal from "./components/ConfirmDeleteCommunityPostModal";
@@ -183,7 +183,8 @@ export default function CommunityPost(props: DefaultProps) {
   ] = useState<string | undefined>();
 
   const [comment, setComment] = useState<string>("");
-  const [isCommentEditStatus, setIsCommentEditStatus] = useState(false);
+  const [isCommentEditStatus, setIsCommentEditStatus] =
+    useState<boolean>(false);
   const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
 
   const router = useRouter();
@@ -320,16 +321,16 @@ export default function CommunityPost(props: DefaultProps) {
       });
   };
 
+  // 댓글 추가 후 스크롤을 강제로 최하단으로 이동
   useEffect(() => {
     if (isNewCommentAdded) {
-      // DOM이 업데이트된 후에만 스크롤을 수행
       window.scrollTo({
-        top: document.body.scrollHeight,
+        top: document.body.scrollHeight, // 최하단으로 이동
         behavior: "smooth",
       });
-      setIsNewCommentAdded(false);
+      setIsNewCommentAdded(false); // 스크롤 후 플래그 초기화
     }
-  }, [isNewCommentAdded]); // `data`가 업데이트되면 실행됨
+  }, [isNewCommentAdded]);
 
   if (isError) return <NotFound />;
   if (isPending) return <Loading />;
@@ -606,7 +607,7 @@ export default function CommunityPost(props: DefaultProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-y-1 px-7 py-2">
+            <div className="flex flex-col gap-y-1 px-7 pt-2 pb-[7.25rem]">
               <p className="flex items-center gap-x-[0.2rem] text-[0.9rem] text-[#333d4b] font-semibold ">
                 댓글
                 <span className="text-[#3a8af9]">
