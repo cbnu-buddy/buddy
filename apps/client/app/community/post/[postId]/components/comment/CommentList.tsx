@@ -2,7 +2,6 @@ import React from "react";
 import EmptyCommentListItem from "./EmptyCommentListItem";
 import { CommentInfo } from "@/types/comment";
 import CommentListItem from "./CommentListItem";
-import { commentInfos } from "@/data/mock/commentInfos";
 
 interface CommentListProps {
   postId: string;
@@ -12,10 +11,11 @@ interface CommentListProps {
   >;
 }
 
-export default function CommentList(props: CommentListProps) {
-  const { postId, comments, setIsOpenCommentAndReplyManagingBottomDrawer } =
-    props;
-
+function CommentList({
+  postId,
+  comments,
+  setIsOpenCommentAndReplyManagingBottomDrawer,
+}: CommentListProps) {
   return (
     <div className="mt-5 flex flex-col gap-y-[0.7rem]">
       {comments?.length === 0 && <EmptyCommentListItem />}
@@ -34,3 +34,5 @@ export default function CommentList(props: CommentListProps) {
     </div>
   );
 }
+
+export default React.memo(CommentList);

@@ -38,15 +38,21 @@ export default function CommentListItem(props: CommentListItemProps) {
     >
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-x-[0.375rem]">
-          <div className="relative w-[30px] h-[30px]">
-            <Image
-              src={commentInfo.writer.profileImagePathUrl}
-              alt="profileImage"
-              fill
-              quality={100}
-              className="rounded-full"
-            />
-          </div>
+          {commentInfo.writer.profileImagePathUrl ? (
+            <div className="relative w-[30px] h-[30px]">
+              <Image
+                src={commentInfo.writer.profileImagePathUrl}
+                alt="profileImage"
+                fill
+                quality={100}
+                className="rounded-full"
+              />
+            </div>
+          ) : (
+            <span className="w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full">
+              {commentInfo.writer.username.charAt(0)}
+            </span>
+          )}
           <span className="text-[0.825rem] text-[#333d4b] font-medium">
             {commentInfo.writer.username}
           </span>
