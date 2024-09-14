@@ -18,6 +18,8 @@ import NotFound from "@/app/[...Not_found]/page";
 import { userInfoStore } from "@/store/UserInfo";
 import { UserInfo } from "@/types/user";
 import { AxiosError } from "axios";
+import ConfirmDeleteCommunityPostCommentModal from "./components/ConfirmDeleteCommunityPostCommentModal";
+import ConfirmDeleteCommunityPostReplyModal from "./components/ConfirmDeleteCommunityPostReplyModal";
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
@@ -161,31 +163,33 @@ export default function CommunityPost(props: DefaultProps) {
   const [isOpenPostManagingBottomDrawer, setIsOpenPostManagingBottomDrawer] =
     useState<boolean>(false);
   const [
-    isOpenCommentAndReplyManagingBottomDrawer,
-    setIsOpenCommentAndReplyManagingBottomDrawer,
+    isOpenCommentManagingBottomDrawer,
+    setIsOpenCommentManagingBottomDrawer,
   ] = useState<boolean>(false);
-  const [
-    isPostManagingBottomDrawerClosing,
-    setIsPostManagingBottomDrawerClosing,
-  ] = useState<boolean>(false);
-  const [
-    isCommentAndReplyManagingBottomDrawerClosing,
-    setIsCommentAndReplyManagingBottomDrawerClosing,
-  ] = useState<boolean>(false);
+  const [isOpenReplyManagingBottomDrawer, setIsOpenReplyManagingBottomDrawer] =
+    useState<boolean>(false);
+  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
+    useState<boolean>(false);
 
   const [
     openConfirmDeleteCommunityPostModal,
     setOpenConfirmDeleteCommunityPostModal,
   ] = useState<string | undefined>();
   const [
-    openConfirmDeleteCommunityPostCommentAndReplyModal,
-    setOpenConfirmDeleteCommunityPostCommentAndReplyModal,
+    openConfirmDeleteCommunityPostCommentModal,
+    setOpenConfirmDeleteCommunityPostCommentModal,
+  ] = useState<string | undefined>();
+  const [
+    openConfirmDeleteCommunityPostReplyModal,
+    setOpenConfirmDeleteCommunityPostReplyModal,
   ] = useState<string | undefined>();
 
   const [comment, setComment] = useState<string>("");
   const [isCommentEditStatus, setIsCommentEditStatus] =
     useState<boolean>(false);
   const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
+  const [selectedCommentId, setSelectedCommentId] = useState<number>(0);
+  const [selectedReplyId, setSelectedReplyId] = useState<number>(0);
 
   const router = useRouter();
 
@@ -240,7 +244,7 @@ export default function CommunityPost(props: DefaultProps) {
       }
     };
 
-    if (isOpenCommentAndReplyManagingBottomDrawer) {
+    if (isOpenCommentManagingBottomDrawer) {
       document.addEventListener("click", handleClickOutside);
       document.addEventListener("keydown", handleEscKeyPress);
     } else {
@@ -252,16 +256,46 @@ export default function CommunityPost(props: DefaultProps) {
       document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleEscKeyPress);
     };
-  }, [isOpenCommentAndReplyManagingBottomDrawer]);
+  }, [isOpenCommentManagingBottomDrawer]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      event.preventDefault();
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(event.target as Node)
+      ) {
+        closeDrawer();
+      }
+    };
+
+    const handleEscKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    };
+
+    if (isOpenReplyManagingBottomDrawer) {
+      document.addEventListener("click", handleClickOutside);
+      document.addEventListener("keydown", handleEscKeyPress);
+    } else {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscKeyPress);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscKeyPress);
+    };
+  }, [isOpenReplyManagingBottomDrawer]);
 
   const closeDrawer = () => {
-    setIsPostManagingBottomDrawerClosing(true);
-    setIsCommentAndReplyManagingBottomDrawerClosing(true);
+    setIsBottomDrawerClosing(true);
     setTimeout(() => {
       setIsOpenPostManagingBottomDrawer(false);
-      setIsOpenCommentAndReplyManagingBottomDrawer(false);
-      setIsPostManagingBottomDrawerClosing(false);
-      setIsCommentAndReplyManagingBottomDrawerClosing(false);
+      setIsOpenCommentManagingBottomDrawer(false);
+      setIsOpenReplyManagingBottomDrawer(false);
+      setIsBottomDrawerClosing(false);
     }, 375);
   };
 
@@ -618,8 +652,13 @@ export default function CommunityPost(props: DefaultProps) {
               <CommentList
                 postId={postId}
                 comments={postInfo.comments}
-                setIsOpenCommentAndReplyManagingBottomDrawer={
-                  setIsOpenCommentAndReplyManagingBottomDrawer
+                setSelectedCommentId={setSelectedCommentId}
+                setSelectedReplyId={setSelectedReplyId}
+                setIsOpenCommentManagingBottomDrawer={
+                  setIsOpenCommentManagingBottomDrawer
+                }
+                setIsOpenReplyManagingBottomDrawer={
+                  setIsOpenReplyManagingBottomDrawer
                 }
               />
             </div>
@@ -701,17 +740,16 @@ export default function CommunityPost(props: DefaultProps) {
       )}
 
       {/* 게시글 관리 Bottom Drawer */}
-      {(isOpenPostManagingBottomDrawer ||
-        isPostManagingBottomDrawerClosing) && (
+      {(isOpenPostManagingBottomDrawer || isBottomDrawerClosing) && (
         <div
           className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
-            isPostManagingBottomDrawerClosing ? "fade-out" : "fade-in"
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
           } `}
         >
           <div
             ref={drawerRef}
             className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
-              isPostManagingBottomDrawerClosing
+              isBottomDrawerClosing
                 ? "bottom-drawer-slide-down"
                 : "bottom-drawer-slide-up"
             }`}
@@ -776,18 +814,17 @@ export default function CommunityPost(props: DefaultProps) {
         </div>
       )}
 
-      {/* 댓글/답글 관리 Bottom Drawer */}
-      {(isOpenCommentAndReplyManagingBottomDrawer ||
-        isCommentAndReplyManagingBottomDrawerClosing) && (
+      {/* 댓글 관리 Bottom Drawer */}
+      {isOpenCommentManagingBottomDrawer && (
         <div
           className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
-            isPostManagingBottomDrawerClosing ? "fade-out" : "fade-in"
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
           } `}
         >
           <div
             ref={drawerRef}
             className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
-              isCommentAndReplyManagingBottomDrawerClosing
+              isBottomDrawerClosing
                 ? "bottom-drawer-slide-down"
                 : "bottom-drawer-slide-up"
             }`}
@@ -839,7 +876,83 @@ export default function CommunityPost(props: DefaultProps) {
                 <button
                   onClick={() => {
                     closeDrawer();
-                    alert("댓글이 삭제됐어요");
+                    setOpenConfirmDeleteCommunityPostCommentModal("default");
+                  }}
+                  className="w-full py-2 flex items-center gap-x-2"
+                >
+                  <span className="relative flex items-center text-[0.825rem]">
+                    삭제하기
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 답글 관리 Bottom Drawer */}
+      {isOpenReplyManagingBottomDrawer && (
+        <div
+          className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
+          } `}
+        >
+          <div
+            ref={drawerRef}
+            className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
+              isBottomDrawerClosing
+                ? "bottom-drawer-slide-down"
+                : "bottom-drawer-slide-up"
+            }`}
+          >
+            <div className="relative flex justify-center items-center">
+              <span className="text-[0.925rem] font-semibold">답글</span>
+
+              <button
+                onClick={() => {
+                  closeDrawer();
+                }}
+                className="absolute right-0 p-2"
+              >
+                <svg
+                  stroke="currentColor"
+                  fill="none"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className="w-6 h-6"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-2 flex flex-col gap-y-3 px-2">
+              <div className="flex flex-col items-start gap-y-1">
+                <button
+                  onClick={() => {
+                    closeDrawer();
+                    setIsCommentEditStatus(true);
+                    setComment("좋은 정보 감사합니다 :p");
+                  }}
+                  className="w-full py-2 flex items-center gap-x-2"
+                >
+                  <span className="relative flex items-center text-[0.825rem]">
+                    수정하기
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    closeDrawer();
+                    setOpenConfirmDeleteCommunityPostReplyModal("default");
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >
@@ -861,6 +974,28 @@ export default function CommunityPost(props: DefaultProps) {
           setOpenConfirmDeleteCommunityPostModal
         }
         postId={postId}
+      />
+
+      <ConfirmDeleteCommunityPostCommentModal
+        openConfirmDeleteCommunityPostCommentModal={
+          openConfirmDeleteCommunityPostCommentModal
+        }
+        setOpenConfirmDeleteCommunityPostCommentModal={
+          setOpenConfirmDeleteCommunityPostCommentModal
+        }
+        postId={postId}
+        selectedCommentId={selectedCommentId}
+      />
+
+      <ConfirmDeleteCommunityPostReplyModal
+        openConfirmDeleteCommunityPostReplyModal={
+          openConfirmDeleteCommunityPostReplyModal
+        }
+        setOpenConfirmDeleteCommunityPostReplyModal={
+          setOpenConfirmDeleteCommunityPostReplyModal
+        }
+        postId={postId}
+        selectedReplyId={selectedReplyId}
       />
     </div>
   );
