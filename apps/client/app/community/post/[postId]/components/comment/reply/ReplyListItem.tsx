@@ -10,7 +10,9 @@ interface ReplyListItemProps {
   postId: string;
   commentId: number;
   replyInfo: ReplyInfo;
-  setIsSelectedReplyId: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
   setIsOpenReplyManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
@@ -21,7 +23,7 @@ export default function ReplyListItem(props: ReplyListItemProps) {
     postId,
     commentId,
     replyInfo,
-    setIsSelectedReplyId,
+    setSelectedReplyInfo,
     setIsOpenReplyManagingBottomDrawer,
   } = props;
 
@@ -56,7 +58,7 @@ export default function ReplyListItem(props: ReplyListItemProps) {
             {userInfo.memberId === replyInfo.writer.memberId && (
               <button
                 onClick={() => {
-                  setIsSelectedReplyId(replyInfo.replyId);
+                  setSelectedReplyInfo(replyInfo);
                   setIsOpenReplyManagingBottomDrawer(true);
                 }}
                 className="p-[0.1rem] rounded-md hover:bg-[#f6f6f6]"
