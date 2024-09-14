@@ -12,8 +12,12 @@ interface CommentListItemProps {
   index: number;
   length: number;
   postId: string;
-  setSelectedCommentId: React.Dispatch<React.SetStateAction<number>>;
-  setSelectedReplyId: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedCommentInfo: React.Dispatch<
+    React.SetStateAction<{ commentId: number; commentContent: string }>
+  >;
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
   setIsOpenCommentManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
@@ -28,8 +32,8 @@ export default function CommentListItem(props: CommentListItemProps) {
     index,
     length,
     postId,
-    setSelectedCommentId,
-    setSelectedReplyId,
+    setSelectedCommentInfo,
+    setSelectedReplyInfo,
     setIsOpenCommentManagingBottomDrawer,
     setIsOpenReplyManagingBottomDrawer,
   } = props;
@@ -72,7 +76,7 @@ export default function CommentListItem(props: CommentListItemProps) {
           {userInfo.memberId === commentInfo.writer.memberId && (
             <button
               onClick={() => {
-                setSelectedCommentId(commentInfo.commentId);
+                setSelectedCommentInfo(commentInfo);
                 setIsOpenCommentManagingBottomDrawer(true);
               }}
               className="p-[0.1rem] rounded-md hover:bg-[#f6f6f6]"
@@ -195,7 +199,7 @@ export default function CommentListItem(props: CommentListItemProps) {
       <ReplyList
         postId={postId}
         commentId={commentInfo.commentId}
-        setSelectedReplyId={setSelectedReplyId}
+        setSelectedReplyInfo={setSelectedReplyInfo}
         replyInfos={commentInfo.replies}
         setIsOpenReplyManagingBottomDrawer={setIsOpenReplyManagingBottomDrawer}
       />

@@ -20,6 +20,7 @@ import { UserInfo } from "@/types/user";
 import { AxiosError } from "axios";
 import ConfirmDeleteCommunityPostCommentModal from "./components/ConfirmDeleteCommunityPostCommentModal";
 import ConfirmDeleteCommunityPostReplyModal from "./components/ConfirmDeleteCommunityPostReplyModal";
+import { ToastInfoStore } from "@/store/components/ToastInfo";
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
@@ -46,6 +47,23 @@ const addCommunityPostComment = ({
   return axiosInstance.post(`/private/posts/${postId}/comment`, requestBody);
 };
 
+// 커뮤니티 게시글 댓글 수정하기 API
+const modifyCommunityPostComment = ({
+  commentId,
+  comment,
+}: {
+  commentId: number;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.patch(
+    `/private/posts/comments/${commentId}`,
+    requestBody
+  );
+};
+
 interface DefaultProps {
   params: {
     postId: string;
@@ -60,6 +78,13 @@ const MarkdownPreview = dynamic(
 export default function CommunityPost(props: DefaultProps) {
   const postId = props.params.postId;
   const queryClient = useQueryClient();
+
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
 
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["communityPostInfo", postId],
@@ -149,6 +174,45 @@ export default function CommunityPost(props: DefaultProps) {
     onSettled: () => {},
   });
 
+  const modifyCommunityPostCommentMutation = useMutation({
+    mutationFn: modifyCommunityPostComment,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setComment("");
+          setIsCommentEditStatus(false);
+          updateToastMessage("댓글이 수정됐어요");
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
 
   const resData = data?.data.response;
@@ -188,8 +252,14 @@ export default function CommunityPost(props: DefaultProps) {
   const [isCommentEditStatus, setIsCommentEditStatus] =
     useState<boolean>(false);
   const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
-  const [selectedCommentId, setSelectedCommentId] = useState<number>(0);
-  const [selectedReplyId, setSelectedReplyId] = useState<number>(0);
+  const [selectedCommentInfo, setSelectedCommentInfo] = useState({
+    commentId: 0,
+    commentContent: "",
+  });
+  const [selectedReplyInfo, setSelectedReplyInfo] = useState({
+    replyId: 0,
+    replyContent: "",
+  });
 
   const router = useRouter();
 
@@ -329,14 +399,29 @@ export default function CommunityPost(props: DefaultProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      handleSubmit();
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isCommentEditStatus) {
+      handleAddComment();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && isCommentEditStatus) {
+      handleModifyComment();
+      return;
     }
   };
 
-  const handleSubmit = () => {
+  const handleAddComment = () => {
     if (comment) {
       addCommunityPostCommentMutation.mutate({ postId, comment });
+    }
+  };
+
+  const handleModifyComment = () => {
+    if (comment) {
+      modifyCommunityPostCommentMutation.mutate({
+        commentId: selectedCommentInfo.commentId,
+        comment,
+      });
     }
   };
 
@@ -652,8 +737,8 @@ export default function CommunityPost(props: DefaultProps) {
               <CommentList
                 postId={postId}
                 comments={postInfo.comments}
-                setSelectedCommentId={setSelectedCommentId}
-                setSelectedReplyId={setSelectedReplyId}
+                setSelectedCommentInfo={setSelectedCommentInfo}
+                setSelectedReplyInfo={setSelectedReplyInfo}
                 setIsOpenCommentManagingBottomDrawer={
                   setIsOpenCommentManagingBottomDrawer
                 }
@@ -686,10 +771,7 @@ export default function CommunityPost(props: DefaultProps) {
                     취소
                   </button>
                   <button
-                    onClick={() => {
-                      setComment("");
-                      setIsCommentEditStatus(false);
-                    }}
+                    onClick={handleModifyComment}
                     disabled={comment ? false : true}
                     className={`w-[3.3rem] py-[0.4rem] font-medium ${
                       comment
@@ -702,7 +784,7 @@ export default function CommunityPost(props: DefaultProps) {
                 </div>
               ) : (
                 <button
-                  onClick={handleSubmit}
+                  onClick={handleAddComment}
                   disabled={comment ? false : true}
                   className={`w-[3.75rem] py-[0.4rem] font-medium ${
                     comment ? "bg-[#3a8af9] hover:bg-[#1c6cdb]" : "bg-[#90c2ff]"
@@ -864,7 +946,7 @@ export default function CommunityPost(props: DefaultProps) {
                   onClick={() => {
                     closeDrawer();
                     setIsCommentEditStatus(true);
-                    setComment("좋은 정보 감사합니다 :p");
+                    setComment(selectedCommentInfo.commentContent);
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >
@@ -940,7 +1022,6 @@ export default function CommunityPost(props: DefaultProps) {
                   onClick={() => {
                     closeDrawer();
                     setIsCommentEditStatus(true);
-                    setComment("좋은 정보 감사합니다 :p");
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >
@@ -984,7 +1065,7 @@ export default function CommunityPost(props: DefaultProps) {
           setOpenConfirmDeleteCommunityPostCommentModal
         }
         postId={postId}
-        selectedCommentId={selectedCommentId}
+        selectedCommentId={selectedCommentInfo.commentId}
       />
 
       <ConfirmDeleteCommunityPostReplyModal
@@ -995,7 +1076,7 @@ export default function CommunityPost(props: DefaultProps) {
           setOpenConfirmDeleteCommunityPostReplyModal
         }
         postId={postId}
-        selectedReplyId={selectedReplyId}
+        selectedReplyId={selectedReplyInfo.replyId}
       />
     </div>
   );

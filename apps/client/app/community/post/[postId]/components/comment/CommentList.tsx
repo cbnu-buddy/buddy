@@ -6,8 +6,12 @@ import CommentListItem from "./CommentListItem";
 interface CommentListProps {
   postId: string;
   comments: CommentInfo[];
-  setSelectedCommentId: React.Dispatch<React.SetStateAction<number>>;
-  setSelectedReplyId: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedCommentInfo: React.Dispatch<
+    React.SetStateAction<{ commentId: number; commentContent: string }>
+  >;
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
   setIsOpenCommentManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
@@ -19,8 +23,8 @@ interface CommentListProps {
 function CommentList({
   postId,
   comments,
-  setSelectedCommentId,
-  setSelectedReplyId,
+  setSelectedCommentInfo,
+  setSelectedReplyInfo,
   setIsOpenCommentManagingBottomDrawer,
   setIsOpenReplyManagingBottomDrawer,
 }: CommentListProps) {
@@ -34,8 +38,8 @@ function CommentList({
           index={index}
           length={comments.length}
           postId={postId}
-          setSelectedCommentId={setSelectedCommentId}
-          setSelectedReplyId={setSelectedReplyId}
+          setSelectedCommentInfo={setSelectedCommentInfo}
+          setSelectedReplyInfo={setSelectedReplyInfo}
           setIsOpenCommentManagingBottomDrawer={
             setIsOpenCommentManagingBottomDrawer
           }
