@@ -8,6 +8,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import { ToastInfoStore } from "@/store/components/ToastInfo";
 
 // 커뮤니티 게시글 내 답글 삭제 API
 const deleteCommunityPostReply = (selectedReplyId: number) => {
@@ -30,6 +31,13 @@ export default function ConfirmDeleteCommunityPostReplyModal({
   selectedReplyId,
 }: ConfirmDeleteCommunityPostModalProps) {
   const queryClient = useQueryClient();
+
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
 
   const deleteCommunityPostReplyMutation = useMutation({
     mutationFn: deleteCommunityPostReply,
@@ -57,6 +65,8 @@ export default function ConfirmDeleteCommunityPostReplyModal({
           queryClient.invalidateQueries({
             queryKey: ["communityPostInfo", postId],
           });
+          updateToastMessage("답글이 삭제됐어요");
+          updateOpenToastStatus(true);
           break;
         default:
           alert("정의되지 않은 http status code입니다");
