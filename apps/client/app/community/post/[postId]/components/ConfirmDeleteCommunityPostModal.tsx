@@ -8,6 +8,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import { ToastInfoStore } from "@/store/components/ToastInfo";
 
 // 커뮤니티 게시글 삭제 API
 const deleteCommunityPost = (postId: string) => {
@@ -27,6 +28,13 @@ export default function ConfirmDeleteCommunityPostModal({
   setOpenConfirmDeleteCommunityPostModal,
   postId,
 }: ConfirmDeleteCommunityPostModalProps) {
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
+
   const deleteCommunityPostMutation = useMutation({
     mutationFn: deleteCommunityPost,
     onMutate: () => {},
@@ -52,8 +60,9 @@ export default function ConfirmDeleteCommunityPostModal({
 
       switch (httpStatusCode) {
         case 200:
-          alert("게시글이 삭제됐어요");
           router.push("/community");
+          updateToastMessage("게시글이 삭제됐어요");
+          updateOpenToastStatus(true);
           break;
         default:
           alert("정의되지 않은 http status code입니다");
