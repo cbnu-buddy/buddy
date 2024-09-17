@@ -64,6 +64,23 @@ const modifyCommunityPostComment = ({
   );
 };
 
+// 커뮤니티 게시글 답글 수정하기 API
+const modifyCommunityPostReply = ({
+  replyId,
+  comment,
+}: {
+  replyId: number;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.patch(
+    `/private/comments/replies/${replyId}`,
+    requestBody
+  );
+};
+
 interface DefaultProps {
   params: {
     postId: string;
@@ -77,6 +94,7 @@ const MarkdownPreview = dynamic(
 
 export default function CommunityPost(props: DefaultProps) {
   const postId = props.params.postId;
+
   const queryClient = useQueryClient();
 
   const updateToastMessage = ToastInfoStore(
@@ -213,6 +231,45 @@ export default function CommunityPost(props: DefaultProps) {
     onSettled: () => {},
   });
 
+  const modifyCommunityPostReplyMutation = useMutation({
+    mutationFn: modifyCommunityPostReply,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setComment("");
+          setIsReplyEditStatus(false);
+          updateToastMessage("답글이 수정됐어요");
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
 
   const resData = data?.data.response;
@@ -251,6 +308,7 @@ export default function CommunityPost(props: DefaultProps) {
   const [comment, setComment] = useState<string>("");
   const [isCommentEditStatus, setIsCommentEditStatus] =
     useState<boolean>(false);
+  const [isReplyEditStatus, setIsReplyEditStatus] = useState<boolean>(false);
   const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
   const [selectedCommentInfo, setSelectedCommentInfo] = useState({
     commentId: 0,
@@ -399,13 +457,33 @@ export default function CommunityPost(props: DefaultProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !isCommentEditStatus) {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      !isCommentEditStatus &&
+      !isReplyEditStatus
+    ) {
       handleAddComment();
       return;
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && isCommentEditStatus) {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      isCommentEditStatus &&
+      !isReplyEditStatus
+    ) {
       handleModifyComment();
+      return;
+    }
+
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      isReplyEditStatus &&
+      !isCommentEditStatus
+    ) {
+      handleModifyReply();
       return;
     }
   };
@@ -420,6 +498,15 @@ export default function CommunityPost(props: DefaultProps) {
     if (comment) {
       modifyCommunityPostCommentMutation.mutate({
         commentId: selectedCommentInfo.commentId,
+        comment,
+      });
+    }
+  };
+
+  const handleModifyReply = () => {
+    if (comment) {
+      modifyCommunityPostReplyMutation.mutate({
+        replyId: selectedReplyInfo.replyId,
         comment,
       });
     }
@@ -759,28 +846,44 @@ export default function CommunityPost(props: DefaultProps) {
                 onChange={(e) => adjustHeight(e)}
                 onKeyDown={handleKeyDown}
               />
-              {isCommentEditStatus ? (
+              {isCommentEditStatus || isReplyEditStatus ? (
                 <div className="flex items-center">
                   <button
                     onClick={() => {
                       setComment("");
                       setIsCommentEditStatus(false);
+                      setIsReplyEditStatus(false);
                     }}
                     className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
                   >
                     취소
                   </button>
-                  <button
-                    onClick={handleModifyComment}
-                    disabled={comment ? false : true}
-                    className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                      comment
-                        ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
-                        : "bg-[#90c2ff]"
-                    } text-xs text-white rounded-[0.3rem]`}
-                  >
-                    수정
-                  </button>
+                  {isCommentEditStatus && (
+                    <button
+                      onClick={handleModifyComment}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
+                          : "bg-[#90c2ff]"
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
+                  {isReplyEditStatus && (
+                    <button
+                      onClick={handleModifyReply}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
+                          : "bg-[#90c2ff]"
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
@@ -945,6 +1048,7 @@ export default function CommunityPost(props: DefaultProps) {
                 <button
                   onClick={() => {
                     closeDrawer();
+                    setIsReplyEditStatus(false);
                     setIsCommentEditStatus(true);
                     setComment(selectedCommentInfo.commentContent);
                   }}
@@ -1021,7 +1125,9 @@ export default function CommunityPost(props: DefaultProps) {
                 <button
                   onClick={() => {
                     closeDrawer();
-                    setIsCommentEditStatus(true);
+                    setIsCommentEditStatus(false);
+                    setIsReplyEditStatus(true);
+                    setComment(selectedReplyInfo.replyContent);
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >

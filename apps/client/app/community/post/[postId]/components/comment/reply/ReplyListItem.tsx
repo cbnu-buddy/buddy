@@ -169,13 +169,6 @@ export default function ReplyListItem(props: ReplyListItemProps) {
               {replyInfo.likeCount}
             </span>
           </button>
-
-          <Link
-            href={`/community/post/${postId}/comment/${commentId}`}
-            className="text-xs text-[#646464]"
-          >
-            답글쓰기
-          </Link>
         </div>
       </div>
     </div>
