@@ -44,6 +44,7 @@ export default function CreateCommunityPost() {
         case 200:
           const postId = resData?.postId;
           alert("게시글이 등록되었습니다.");
+          localStorage.removeItem(STORAGE_KEY);
           router.push(`/community/post/${postId}`);
           break;
         default:
