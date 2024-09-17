@@ -67,6 +67,7 @@ export default function ConfirmDeleteCommunityPostCommentModal({
           });
           updateToastMessage("댓글이 삭제됐어요");
           updateOpenToastStatus(true);
+          router.push(`/community/post/${postId}`);
           break;
         default:
           alert("정의되지 않은 http status code입니다");

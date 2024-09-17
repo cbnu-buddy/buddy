@@ -12,7 +12,7 @@ interface ReplyListProps {
   >;
 }
 
-export default function ReplyList(props: ReplyListProps) {
+function ReplyList(props: ReplyListProps) {
   const {
     replyInfos,
     setSelectedReplyInfo,
@@ -35,3 +35,5 @@ export default function ReplyList(props: ReplyListProps) {
     </div>
   );
 }
+
+export default React.memo(ReplyList);

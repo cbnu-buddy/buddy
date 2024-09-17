@@ -433,7 +433,7 @@ export default function CommunityPostComment(props: DefaultProps) {
       </div>
 
       <div className="h-full mt-5 bg-[#f9fafb] text-[#4e5968] rounded-t-2xl p-7 min-h-[35rem]">
-        <div className="flex flex-col gap-y-2 pb-[8rem]">
+        <div className="flex flex-col gap-y-2 pb-[8.5rem]">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-x-[0.375rem]">
               {matchedComment.writer.profileImagePathUrl ? (
@@ -638,7 +638,7 @@ export default function CommunityPostComment(props: DefaultProps) {
                   </span>
                 </button>
 
-                {matchedComment.replies.length !== 0 && (
+                {matchedComment.replies.length === 0 && (
                   <button
                     onClick={() => {
                       closeDrawer();
