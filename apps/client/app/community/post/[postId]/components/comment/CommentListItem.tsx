@@ -12,7 +12,16 @@ interface CommentListItemProps {
   index: number;
   length: number;
   postId: string;
-  setIsOpenCommentAndReplyManagingBottomDrawer: React.Dispatch<
+  setSelectedCommentInfo: React.Dispatch<
+    React.SetStateAction<{ commentId: number; commentContent: string }>
+  >;
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
+  setIsOpenCommentManagingBottomDrawer: React.Dispatch<
+    React.SetStateAction<boolean>
+  >;
+  setIsOpenReplyManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
 }
@@ -23,7 +32,10 @@ export default function CommentListItem(props: CommentListItemProps) {
     index,
     length,
     postId,
-    setIsOpenCommentAndReplyManagingBottomDrawer,
+    setSelectedCommentInfo,
+    setSelectedReplyInfo,
+    setIsOpenCommentManagingBottomDrawer,
+    setIsOpenReplyManagingBottomDrawer,
   } = props;
 
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
@@ -38,15 +50,21 @@ export default function CommentListItem(props: CommentListItemProps) {
     >
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-x-[0.375rem]">
-          <div className="relative w-[30px] h-[30px]">
-            <Image
-              src={commentInfo.writer.profileImagePathUrl}
-              alt="profileImage"
-              fill
-              quality={100}
-              className="rounded-full"
-            />
-          </div>
+          {commentInfo.writer.profileImagePathUrl ? (
+            <div className="relative w-[30px] h-[30px]">
+              <Image
+                src={commentInfo.writer.profileImagePathUrl}
+                alt="profileImage"
+                fill
+                quality={100}
+                className="rounded-full"
+              />
+            </div>
+          ) : (
+            <span className="w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full">
+              {commentInfo.writer.username.charAt(0)}
+            </span>
+          )}
           <span className="text-[0.825rem] text-[#333d4b] font-medium">
             {commentInfo.writer.username}
           </span>
@@ -58,7 +76,8 @@ export default function CommentListItem(props: CommentListItemProps) {
           {userInfo.memberId === commentInfo.writer.memberId && (
             <button
               onClick={() => {
-                setIsOpenCommentAndReplyManagingBottomDrawer(true);
+                setSelectedCommentInfo(commentInfo);
+                setIsOpenCommentManagingBottomDrawer(true);
               }}
               className="p-[0.1rem] rounded-md hover:bg-[#f6f6f6]"
             >
@@ -180,10 +199,9 @@ export default function CommentListItem(props: CommentListItemProps) {
       <ReplyList
         postId={postId}
         commentId={commentInfo.commentId}
+        setSelectedReplyInfo={setSelectedReplyInfo}
         replyInfos={commentInfo.replies}
-        setIsOpenCommentAndReplyManagingBottomDrawer={
-          setIsOpenCommentAndReplyManagingBottomDrawer
-        }
+        setIsOpenReplyManagingBottomDrawer={setIsOpenReplyManagingBottomDrawer}
       />
     </div>
   );

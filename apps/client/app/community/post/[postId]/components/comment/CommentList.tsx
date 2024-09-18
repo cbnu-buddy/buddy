@@ -2,20 +2,32 @@ import React from "react";
 import EmptyCommentListItem from "./EmptyCommentListItem";
 import { CommentInfo } from "@/types/comment";
 import CommentListItem from "./CommentListItem";
-import { commentInfos } from "@/data/mock/commentInfos";
 
 interface CommentListProps {
   postId: string;
   comments: CommentInfo[];
-  setIsOpenCommentAndReplyManagingBottomDrawer: React.Dispatch<
+  setSelectedCommentInfo: React.Dispatch<
+    React.SetStateAction<{ commentId: number; commentContent: string }>
+  >;
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
+  setIsOpenCommentManagingBottomDrawer: React.Dispatch<
+    React.SetStateAction<boolean>
+  >;
+  setIsOpenReplyManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
 }
 
-export default function CommentList(props: CommentListProps) {
-  const { postId, comments, setIsOpenCommentAndReplyManagingBottomDrawer } =
-    props;
-
+function CommentList({
+  postId,
+  comments,
+  setSelectedCommentInfo,
+  setSelectedReplyInfo,
+  setIsOpenCommentManagingBottomDrawer,
+  setIsOpenReplyManagingBottomDrawer,
+}: CommentListProps) {
   return (
     <div className="mt-5 flex flex-col gap-y-[0.7rem]">
       {comments?.length === 0 && <EmptyCommentListItem />}
@@ -26,11 +38,18 @@ export default function CommentList(props: CommentListProps) {
           index={index}
           length={comments.length}
           postId={postId}
-          setIsOpenCommentAndReplyManagingBottomDrawer={
-            setIsOpenCommentAndReplyManagingBottomDrawer
+          setSelectedCommentInfo={setSelectedCommentInfo}
+          setSelectedReplyInfo={setSelectedReplyInfo}
+          setIsOpenCommentManagingBottomDrawer={
+            setIsOpenCommentManagingBottomDrawer
+          }
+          setIsOpenReplyManagingBottomDrawer={
+            setIsOpenReplyManagingBottomDrawer
           }
         />
       ))}
     </div>
   );
 }
+
+export default React.memo(CommentList);

@@ -10,7 +10,10 @@ interface ReplyListItemProps {
   postId: string;
   commentId: number;
   replyInfo: ReplyInfo;
-  setIsOpenCommentAndReplyManagingBottomDrawer: React.Dispatch<
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
+  setIsOpenReplyManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
 }
@@ -20,7 +23,8 @@ export default function ReplyListItem(props: ReplyListItemProps) {
     postId,
     commentId,
     replyInfo,
-    setIsOpenCommentAndReplyManagingBottomDrawer,
+    setSelectedReplyInfo,
+    setIsOpenReplyManagingBottomDrawer,
   } = props;
 
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
@@ -32,7 +36,7 @@ export default function ReplyListItem(props: ReplyListItemProps) {
       <span className={`before:content-['ㄴ'] text-[#949aa1]`} />
       <div className="w-full flex flex-col gap-y-2">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-x-[0.375rem]">
+          {replyInfo.writer.profileImagePathUrl ? (
             <div className="relative w-[30px] h-[30px]">
               <Image
                 src={replyInfo.writer.profileImagePathUrl}
@@ -42,10 +46,11 @@ export default function ReplyListItem(props: ReplyListItemProps) {
                 className="rounded-full"
               />
             </div>
-            <span className="text-[0.825rem] text-[#333d4b] font-medium">
-              {replyInfo.writer.username}
+          ) : (
+            <span className="w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full">
+              {replyInfo.writer.username.charAt(0)}
             </span>
-          </div>
+          )}
 
           <div className="flex items-center gap-x-1 text-xs text-[#4e5968] text-right">
             {formatDateAndTimeAgo(replyInfo.createdAt)}
@@ -53,7 +58,8 @@ export default function ReplyListItem(props: ReplyListItemProps) {
             {userInfo.memberId === replyInfo.writer.memberId && (
               <button
                 onClick={() => {
-                  setIsOpenCommentAndReplyManagingBottomDrawer(true);
+                  setSelectedReplyInfo(replyInfo);
+                  setIsOpenReplyManagingBottomDrawer(true);
                 }}
                 className="p-[0.1rem] rounded-md hover:bg-[#f6f6f6]"
               >
@@ -163,13 +169,6 @@ export default function ReplyListItem(props: ReplyListItemProps) {
               {replyInfo.likeCount}
             </span>
           </button>
-
-          <Link
-            href={`/community/post/${postId}/comment/${commentId}`}
-            className="text-xs text-[#646464]"
-          >
-            답글쓰기
-          </Link>
         </div>
       </div>
     </div>

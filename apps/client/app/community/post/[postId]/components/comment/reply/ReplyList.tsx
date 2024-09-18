@@ -7,7 +7,10 @@ interface ReplyListProps {
   postId: string;
   commentId: number;
   replyInfos: ReplyInfo[];
-  setIsOpenCommentAndReplyManagingBottomDrawer: React.Dispatch<
+  setSelectedReplyInfo: React.Dispatch<
+    React.SetStateAction<{ replyId: number; replyContent: string }>
+  >;
+  setIsOpenReplyManagingBottomDrawer: React.Dispatch<
     React.SetStateAction<boolean>
   >;
 }
@@ -17,7 +20,8 @@ export default function ReplyList(props: ReplyListProps) {
     postId,
     commentId,
     replyInfos,
-    setIsOpenCommentAndReplyManagingBottomDrawer,
+    setSelectedReplyInfo,
+    setIsOpenReplyManagingBottomDrawer,
   } = props;
 
   return (
@@ -29,8 +33,9 @@ export default function ReplyList(props: ReplyListProps) {
             commentId={commentId}
             replyInfo={replyInfo}
             key={index}
-            setIsOpenCommentAndReplyManagingBottomDrawer={
-              setIsOpenCommentAndReplyManagingBottomDrawer
+            setSelectedReplyInfo={setSelectedReplyInfo}
+            setIsOpenReplyManagingBottomDrawer={
+              setIsOpenReplyManagingBottomDrawer
             }
           />
         ))}

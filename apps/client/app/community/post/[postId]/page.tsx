@@ -1,10 +1,9 @@
 "use client";
 
-import { communityPostInfo } from "@/data/mock/communityPostInfos";
 import { PostInfo } from "@/types/post";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Toast } from "flowbite-react";
 import ConfirmDeleteCommunityPostModal from "./components/ConfirmDeleteCommunityPostModal";
@@ -14,15 +13,72 @@ import Link from "next/link";
 import CommentList from "./components/comment/CommentList";
 import { formatDateAndTimeAgo } from "@/utils/formatDate";
 import axiosInstance from "@/utils/axiosInstance";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import NotFound from "@/app/[...Not_found]/page";
 import { userInfoStore } from "@/store/UserInfo";
 import { UserInfo } from "@/types/user";
+import { AxiosError } from "axios";
+import ConfirmDeleteCommunityPostCommentModal from "./components/ConfirmDeleteCommunityPostCommentModal";
+import ConfirmDeleteCommunityPostReplyModal from "./components/ConfirmDeleteCommunityPostReplyModal";
+import { ToastInfoStore } from "@/store/components/ToastInfo";
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
   const postId = queryKey[1];
   return axiosInstance.get(`/public/community/posts/${postId}`);
+};
+
+// 커뮤니티 게시글 좋아요 API
+const doLikeCommunityPost = (postId: string) => {
+  return axiosInstance.post(`/private/community/posts/${postId}/like`);
+};
+
+// 커뮤니티 게시글 댓글 작성하기 API
+const addCommunityPostComment = ({
+  postId,
+  comment,
+}: {
+  postId: string;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.post(`/private/posts/${postId}/comment`, requestBody);
+};
+
+// 커뮤니티 게시글 댓글 수정하기 API
+const modifyCommunityPostComment = ({
+  commentId,
+  comment,
+}: {
+  commentId: number;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.patch(
+    `/private/posts/comments/${commentId}`,
+    requestBody
+  );
+};
+
+// 커뮤니티 게시글 답글 수정하기 API
+const modifyCommunityPostReply = ({
+  replyId,
+  comment,
+}: {
+  replyId: number;
+  comment: string;
+}) => {
+  const requestBody = {
+    content: comment,
+  };
+  return axiosInstance.patch(
+    `/private/comments/replies/${replyId}`,
+    requestBody
+  );
 };
 
 interface DefaultProps {
@@ -39,10 +95,179 @@ const MarkdownPreview = dynamic(
 export default function CommunityPost(props: DefaultProps) {
   const postId = props.params.postId;
 
+  const queryClient = useQueryClient();
+
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
+
   const { isPending, isError, data, error } = useQuery({
     queryKey: ["communityPostInfo", postId],
     queryFn: fetchCommunityPostInfo,
     retry: 0,
+  });
+
+  const doLikeCommunityPostMutation = useMutation({
+    mutationFn: doLikeCommunityPost,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case "CONFLICT":
+              alert("이미 좋아요된 게시글입니다.");
+              break;
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          // 쿼리 데이터 업데이트
+          // const updatedContestants = [];
+          // queryClient.setQueryData(["communityPostInfo", postId], {
+          //   ...data,
+          //   data: {
+          //     ...data?.data,
+          //     data: {
+          //       ...postInfo,
+          //       contestants: updatedPostInfo,
+          //     },
+          //   },
+          // });
+
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const addCommunityPostCommentMutation = useMutation({
+    mutationFn: addCommunityPostComment,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setIsNewCommentAdded(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const modifyCommunityPostCommentMutation = useMutation({
+    mutationFn: modifyCommunityPostComment,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setComment("");
+          setIsCommentEditStatus(false);
+          updateToastMessage("댓글이 수정됐어요");
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const modifyCommunityPostReplyMutation = useMutation({
+    mutationFn: modifyCommunityPostReply,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert("정의되지 않은 http code입니다.");
+          }
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setComment("");
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ["communityPostInfo", postId],
+          });
+          setComment("");
+          setIsReplyEditStatus(false);
+          updateToastMessage("답글이 수정됐어요");
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert("정의되지 않은 http status code입니다");
+      }
+    },
+    onSettled: () => {},
   });
 
   const userInfo: UserInfo = userInfoStore((state: any) => state.userInfo);
@@ -59,30 +284,40 @@ export default function CommunityPost(props: DefaultProps) {
   const [isOpenPostManagingBottomDrawer, setIsOpenPostManagingBottomDrawer] =
     useState<boolean>(false);
   const [
-    isOpenCommentAndReplyManagingBottomDrawer,
-    setIsOpenCommentAndReplyManagingBottomDrawer,
+    isOpenCommentManagingBottomDrawer,
+    setIsOpenCommentManagingBottomDrawer,
   ] = useState<boolean>(false);
-  const [
-    isPostManagingBottomDrawerClosing,
-    setIsPostManagingBottomDrawerClosing,
-  ] = useState<boolean>(false);
-  const [
-    isCommentAndReplyManagingBottomDrawerClosing,
-    setIsCommentAndReplyManagingBottomDrawerClosing,
-  ] = useState<boolean>(false);
+  const [isOpenReplyManagingBottomDrawer, setIsOpenReplyManagingBottomDrawer] =
+    useState<boolean>(false);
+  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
+    useState<boolean>(false);
 
   const [
     openConfirmDeleteCommunityPostModal,
     setOpenConfirmDeleteCommunityPostModal,
   ] = useState<string | undefined>();
   const [
-    openConfirmDeleteCommunityPostCommentAndReplyModal,
-    setOpenConfirmDeleteCommunityPostCommentAndReplyModal,
+    openConfirmDeleteCommunityPostCommentModal,
+    setOpenConfirmDeleteCommunityPostCommentModal,
+  ] = useState<string | undefined>();
+  const [
+    openConfirmDeleteCommunityPostReplyModal,
+    setOpenConfirmDeleteCommunityPostReplyModal,
   ] = useState<string | undefined>();
 
   const [comment, setComment] = useState<string>("");
-
-  const [isCommentEditStatus, setIsCommentEditStatus] = useState(false);
+  const [isCommentEditStatus, setIsCommentEditStatus] =
+    useState<boolean>(false);
+  const [isReplyEditStatus, setIsReplyEditStatus] = useState<boolean>(false);
+  const [isNewCommentAdded, setIsNewCommentAdded] = useState<boolean>(false);
+  const [selectedCommentInfo, setSelectedCommentInfo] = useState({
+    commentId: 0,
+    commentContent: "",
+  });
+  const [selectedReplyInfo, setSelectedReplyInfo] = useState({
+    replyId: 0,
+    replyContent: "",
+  });
 
   const router = useRouter();
 
@@ -137,7 +372,7 @@ export default function CommunityPost(props: DefaultProps) {
       }
     };
 
-    if (isOpenCommentAndReplyManagingBottomDrawer) {
+    if (isOpenCommentManagingBottomDrawer) {
       document.addEventListener("click", handleClickOutside);
       document.addEventListener("keydown", handleEscKeyPress);
     } else {
@@ -149,16 +384,46 @@ export default function CommunityPost(props: DefaultProps) {
       document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleEscKeyPress);
     };
-  }, [isOpenCommentAndReplyManagingBottomDrawer]);
+  }, [isOpenCommentManagingBottomDrawer]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      event.preventDefault();
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(event.target as Node)
+      ) {
+        closeDrawer();
+      }
+    };
+
+    const handleEscKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    };
+
+    if (isOpenReplyManagingBottomDrawer) {
+      document.addEventListener("click", handleClickOutside);
+      document.addEventListener("keydown", handleEscKeyPress);
+    } else {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscKeyPress);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("keydown", handleEscKeyPress);
+    };
+  }, [isOpenReplyManagingBottomDrawer]);
 
   const closeDrawer = () => {
-    setIsPostManagingBottomDrawerClosing(true);
-    setIsCommentAndReplyManagingBottomDrawerClosing(true);
+    setIsBottomDrawerClosing(true);
     setTimeout(() => {
       setIsOpenPostManagingBottomDrawer(false);
-      setIsOpenCommentAndReplyManagingBottomDrawer(false);
-      setIsPostManagingBottomDrawerClosing(false);
-      setIsCommentAndReplyManagingBottomDrawerClosing(false);
+      setIsOpenCommentManagingBottomDrawer(false);
+      setIsOpenReplyManagingBottomDrawer(false);
+      setIsBottomDrawerClosing(false);
     }, 375);
   };
 
@@ -192,16 +457,58 @@ export default function CommunityPost(props: DefaultProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      handleSubmit();
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      !isCommentEditStatus &&
+      !isReplyEditStatus
+    ) {
+      handleAddComment();
+      return;
+    }
+
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      isCommentEditStatus &&
+      !isReplyEditStatus
+    ) {
+      handleModifyComment();
+      return;
+    }
+
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key === "Enter" &&
+      isReplyEditStatus &&
+      !isCommentEditStatus
+    ) {
+      handleModifyReply();
+      return;
     }
   };
 
-  const handleSubmit = () => {
+  const handleAddComment = () => {
     if (comment) {
-      // 등록 버튼 클릭 시의 로직을 여기에 추가
-      alert("등록 버튼이 클릭되었습니다.");
-      setComment("");
+      addCommunityPostCommentMutation.mutate({ postId, comment });
+    }
+  };
+
+  const handleModifyComment = () => {
+    if (comment) {
+      modifyCommunityPostCommentMutation.mutate({
+        commentId: selectedCommentInfo.commentId,
+        comment,
+      });
+    }
+  };
+
+  const handleModifyReply = () => {
+    if (comment) {
+      modifyCommunityPostReplyMutation.mutate({
+        replyId: selectedReplyInfo.replyId,
+        comment,
+      });
     }
   };
 
@@ -219,6 +526,17 @@ export default function CommunityPost(props: DefaultProps) {
         alert("복사에 실패했습니다.");
       });
   };
+
+  // 댓글 추가 후 스크롤을 강제로 최하단으로 이동
+  useEffect(() => {
+    if (isNewCommentAdded) {
+      window.scrollTo({
+        top: document.body.scrollHeight, // 최하단으로 이동
+        behavior: "smooth",
+      });
+      setIsNewCommentAdded(false); // 스크롤 후 플래그 초기화
+    }
+  }, [isNewCommentAdded]);
 
   if (isError) return <NotFound />;
   if (isPending) return <Loading />;
@@ -381,7 +699,9 @@ export default function CommunityPost(props: DefaultProps) {
                   </div>
 
                   <button
-                    onClick={() => setIsLikedPost((prev) => !prev)}
+                    onClick={() => {
+                      doLikeCommunityPostMutation.mutate(postId);
+                    }}
                     className={`relative ml-[-0.25rem] flex items-center bg-[#f2f4f6] text-[#4e5968] rounded-full px-2 py-[0.3rem] ${
                       isLikedPost && "outline outline-1 outline-[#3a8af9]"
                     }`}
@@ -465,7 +785,7 @@ export default function CommunityPost(props: DefaultProps) {
                     href={`/join-party/plan/${
                       partySelectedPlanInfos[service.serviceId - 1]
                         .planDetailInfos[
-                        partySelectedPlanInfos[service.serviceId]
+                        partySelectedPlanInfos[service.serviceId - 1]
                           .planDetailInfos.length - 1
                       ].id
                     }`}
@@ -493,7 +813,7 @@ export default function CommunityPost(props: DefaultProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-y-1 px-7 py-2">
+            <div className="flex flex-col gap-y-1 px-7 pt-2 pb-[7.25rem]">
               <p className="flex items-center gap-x-[0.2rem] text-[0.9rem] text-[#333d4b] font-semibold ">
                 댓글
                 <span className="text-[#3a8af9]">
@@ -504,8 +824,13 @@ export default function CommunityPost(props: DefaultProps) {
               <CommentList
                 postId={postId}
                 comments={postInfo.comments}
-                setIsOpenCommentAndReplyManagingBottomDrawer={
-                  setIsOpenCommentAndReplyManagingBottomDrawer
+                setSelectedCommentInfo={setSelectedCommentInfo}
+                setSelectedReplyInfo={setSelectedReplyInfo}
+                setIsOpenCommentManagingBottomDrawer={
+                  setIsOpenCommentManagingBottomDrawer
+                }
+                setIsOpenReplyManagingBottomDrawer={
+                  setIsOpenReplyManagingBottomDrawer
                 }
               />
             </div>
@@ -521,35 +846,48 @@ export default function CommunityPost(props: DefaultProps) {
                 onChange={(e) => adjustHeight(e)}
                 onKeyDown={handleKeyDown}
               />
-              {isCommentEditStatus ? (
+              {isCommentEditStatus || isReplyEditStatus ? (
                 <div className="flex items-center">
                   <button
                     onClick={() => {
                       setComment("");
                       setIsCommentEditStatus(false);
+                      setIsReplyEditStatus(false);
                     }}
                     className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
                   >
                     취소
                   </button>
-                  <button
-                    onClick={() => {
-                      setComment("");
-                      setIsCommentEditStatus(false);
-                    }}
-                    disabled={comment ? false : true}
-                    className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                      comment
-                        ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
-                        : "bg-[#90c2ff]"
-                    } text-xs text-white rounded-[0.3rem]`}
-                  >
-                    수정
-                  </button>
+                  {isCommentEditStatus && (
+                    <button
+                      onClick={handleModifyComment}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
+                          : "bg-[#90c2ff]"
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
+                  {isReplyEditStatus && (
+                    <button
+                      onClick={handleModifyReply}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? "bg-[#3a8af9] hover:bg-[#1c6cdb]"
+                          : "bg-[#90c2ff]"
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
-                  onClick={handleSubmit}
+                  onClick={handleAddComment}
                   disabled={comment ? false : true}
                   className={`w-[3.75rem] py-[0.4rem] font-medium ${
                     comment ? "bg-[#3a8af9] hover:bg-[#1c6cdb]" : "bg-[#90c2ff]"
@@ -587,17 +925,16 @@ export default function CommunityPost(props: DefaultProps) {
       )}
 
       {/* 게시글 관리 Bottom Drawer */}
-      {(isOpenPostManagingBottomDrawer ||
-        isPostManagingBottomDrawerClosing) && (
+      {(isOpenPostManagingBottomDrawer || isBottomDrawerClosing) && (
         <div
           className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
-            isPostManagingBottomDrawerClosing ? "fade-out" : "fade-in"
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
           } `}
         >
           <div
             ref={drawerRef}
             className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
-              isPostManagingBottomDrawerClosing
+              isBottomDrawerClosing
                 ? "bottom-drawer-slide-down"
                 : "bottom-drawer-slide-up"
             }`}
@@ -662,18 +999,17 @@ export default function CommunityPost(props: DefaultProps) {
         </div>
       )}
 
-      {/* 댓글/답글 관리 Bottom Drawer */}
-      {(isOpenCommentAndReplyManagingBottomDrawer ||
-        isCommentAndReplyManagingBottomDrawerClosing) && (
+      {/* 댓글 관리 Bottom Drawer */}
+      {isOpenCommentManagingBottomDrawer && (
         <div
           className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
-            isPostManagingBottomDrawerClosing ? "fade-out" : "fade-in"
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
           } `}
         >
           <div
             ref={drawerRef}
             className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
-              isCommentAndReplyManagingBottomDrawerClosing
+              isBottomDrawerClosing
                 ? "bottom-drawer-slide-down"
                 : "bottom-drawer-slide-up"
             }`}
@@ -712,8 +1048,9 @@ export default function CommunityPost(props: DefaultProps) {
                 <button
                   onClick={() => {
                     closeDrawer();
+                    setIsReplyEditStatus(false);
                     setIsCommentEditStatus(true);
-                    setComment("좋은 정보 감사합니다 :p");
+                    setComment(selectedCommentInfo.commentContent);
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >
@@ -725,7 +1062,84 @@ export default function CommunityPost(props: DefaultProps) {
                 <button
                   onClick={() => {
                     closeDrawer();
-                    alert("댓글이 삭제됐어요");
+                    setOpenConfirmDeleteCommunityPostCommentModal("default");
+                  }}
+                  className="w-full py-2 flex items-center gap-x-2"
+                >
+                  <span className="relative flex items-center text-[0.825rem]">
+                    삭제하기
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 답글 관리 Bottom Drawer */}
+      {isOpenReplyManagingBottomDrawer && (
+        <div
+          className={`z-10 fixed top-0 left-0 flex justify-center place-items-end w-screen h-full bg-[#111827] bg-opacity-50 ${
+            isBottomDrawerClosing ? "fade-out" : "fade-in"
+          } `}
+        >
+          <div
+            ref={drawerRef}
+            className={`w-[40rem] h-fit bg-white rounded-t-2xl px-3 py-5 pb-7 ${
+              isBottomDrawerClosing
+                ? "bottom-drawer-slide-down"
+                : "bottom-drawer-slide-up"
+            }`}
+          >
+            <div className="relative flex justify-center items-center">
+              <span className="text-[0.925rem] font-semibold">답글</span>
+
+              <button
+                onClick={() => {
+                  closeDrawer();
+                }}
+                className="absolute right-0 p-2"
+              >
+                <svg
+                  stroke="currentColor"
+                  fill="none"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className="w-6 h-6"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-2 flex flex-col gap-y-3 px-2">
+              <div className="flex flex-col items-start gap-y-1">
+                <button
+                  onClick={() => {
+                    closeDrawer();
+                    setIsCommentEditStatus(false);
+                    setIsReplyEditStatus(true);
+                    setComment(selectedReplyInfo.replyContent);
+                  }}
+                  className="w-full py-2 flex items-center gap-x-2"
+                >
+                  <span className="relative flex items-center text-[0.825rem]">
+                    수정하기
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    closeDrawer();
+                    setOpenConfirmDeleteCommunityPostReplyModal("default");
                   }}
                   className="w-full py-2 flex items-center gap-x-2"
                 >
@@ -747,6 +1161,28 @@ export default function CommunityPost(props: DefaultProps) {
           setOpenConfirmDeleteCommunityPostModal
         }
         postId={postId}
+      />
+
+      <ConfirmDeleteCommunityPostCommentModal
+        openConfirmDeleteCommunityPostCommentModal={
+          openConfirmDeleteCommunityPostCommentModal
+        }
+        setOpenConfirmDeleteCommunityPostCommentModal={
+          setOpenConfirmDeleteCommunityPostCommentModal
+        }
+        postId={postId}
+        selectedCommentId={selectedCommentInfo.commentId}
+      />
+
+      <ConfirmDeleteCommunityPostReplyModal
+        openConfirmDeleteCommunityPostReplyModal={
+          openConfirmDeleteCommunityPostReplyModal
+        }
+        setOpenConfirmDeleteCommunityPostReplyModal={
+          setOpenConfirmDeleteCommunityPostReplyModal
+        }
+        postId={postId}
+        selectedReplyId={selectedReplyInfo.replyId}
       />
     </div>
   );
