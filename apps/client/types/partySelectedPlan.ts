@@ -5,7 +5,7 @@ export interface PartySelectedPlanInfo {
   iconImgAlt: string;
   name: string;
   category: string;
-  tag: string;
+  tagName: string;
   homePageUrl: string;
   planDetailInfos: {
     id: number;
