@@ -1,5 +1,5 @@
-import { CommentInfo } from "./comment";
-import { TagInfo } from "./tag";
+import { CommentInfo } from './comment';
+import { TagInfo } from './tag';
 
 export interface PostInfo {
   postId: number;
@@ -19,6 +19,7 @@ export interface PostInfo {
   }[];
   comments: CommentInfo[];
   likeCount: number;
+  isLiked: boolean;
 }
 
 export interface Author {
@@ -33,4 +34,5 @@ export interface CreatePostParams {
   content: string;
   tags: string[];
   serviceIds: number[];
+  postImagePathUrls: string[];
 }
