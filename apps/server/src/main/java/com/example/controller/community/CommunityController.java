@@ -108,7 +108,7 @@ public class CommunityController {
         return communityService.searchTag(q,limit);
     }
 
-    @Operation(summary = "파일 업로드", description = "")
+    @Operation(summary = "파일 업로드", description = "storage에 사진을 업로드하고 url을 반환한다.")
     @PostMapping(value = "/private/community/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResult<?> uploadFile(@RequestParam("file") List<MultipartFile> files) throws Exception {
         return communityService.uploadFiles(files);
