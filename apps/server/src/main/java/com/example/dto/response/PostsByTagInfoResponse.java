@@ -21,6 +21,7 @@ public class PostsByTagInfoResponse {
     private LocalDateTime modifiedAt;
     private AuthorDto author;
     private List<TagsDto> tags;
+  private List<String> postImagePathUrls;
     private int views;
     private List<ServiceDto> services;
     private List<CommentDto> comments;

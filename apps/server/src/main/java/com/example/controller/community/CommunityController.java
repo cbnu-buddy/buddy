@@ -108,9 +108,9 @@ public class CommunityController {
         return communityService.searchTag(q,limit);
     }
 
-  @Operation(summary = "파일 업로드", description = "")
-  @PostMapping(value = "/private/community/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ApiResult<?> uploadFile(@RequestPart("file") MultipartFile file, HttpServletRequest request) throws Exception {
-    return communityService.uploadFile(file);
-  }
+    @Operation(summary = "파일 업로드", description = "")
+    @PostMapping(value = "/private/community/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResult<?> uploadFile(@RequestParam("file") List<MultipartFile> files) throws Exception {
+        return communityService.uploadFiles(files);
+    }
 }

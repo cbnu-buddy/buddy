@@ -34,10 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
@@ -50,6 +47,7 @@ public class CommunityService {
     private final TagRepository tagRepository;
     private final PostTagRepository postTagRepository;
     private final PostServiceRepository postServiceRepository;
+    private final PhotoRepository photoRepository;
     private final MemberRepository memberRepository;
     private final ServiceRepository serviceRepository;
     private final TokenProvider tokenProvider;
@@ -113,6 +111,14 @@ public class CommunityService {
             postServiceRepository.save(postService);
         }
 
+        // 사진 생성, 저장
+        for (String photoPath : postRequest.getPostImagePathUrls()) {
+            Photo photo = new Photo();
+            photo.setPost(post);
+            photo.setPhotoPath(photoPath);
+            photoRepository.save(photo);
+        }
+
         return ApiResult.success(Map.of("tagIds", tagIds,"postId", savedPost.getId()));
     }
 
@@ -136,9 +142,10 @@ public class CommunityService {
         post.setContent(updatePostRequest.getContent());
         post.setModifiedTime(LocalDateTime.now());
 
-        // 기존 태그, 서비스, 사진 삭제 (post_tags, post_services)
+        // 기존 태그, 서비스, 사진 삭제 (post_tags, post_services, photo table)
         deleteExistingPostTags(post);
         deleteExistingPostServices(post);
+        deleteExistingPhotos(post);
 
         // 수정된 태그, 서비스, 사진 저장
         for (String tagName : updatePostRequest.getTags()) {
@@ -153,7 +160,15 @@ public class CommunityService {
             postTagRepository.save(postTag);
         }
 
-        for (Long serviceId : updatePostRequest.getServiceIds()) {
+        for (String photoPath : updatePostRequest.getPostImagePathUrls()) {
+            Photo photo = new Photo();
+            photo.setPost(post);
+            photo.setPhotoPath(photoPath);
+            photoRepository.save(photo);
+        }
+
+
+      for (Long serviceId : updatePostRequest.getServiceIds()) {
             Service service = serviceRepository.findById(serviceId)
                     .orElseThrow(() -> new CustomException(ErrorCode.INVALID_SERVICE_ID));
             PostService postService = new PostService(post, service);
@@ -172,6 +187,11 @@ public class CommunityService {
     private void deleteExistingPostServices(Post post) {
         List<PostService> postServices = postServiceRepository.findByPost(post);
         postServiceRepository.deleteAll(postServices);
+    }
+
+    private void deleteExistingPhotos(Post post) {
+        List<Photo> photos = photoRepository.findByPost(post);
+        photoRepository.deleteAll(photos);
     }
 
     /**
@@ -193,6 +213,8 @@ public class CommunityService {
         // 기존 태그, 서비스, 사진 삭제
         deleteExistingPostTags(post);
         deleteExistingPostServices(post);
+        deleteExistingPhotos(post);
+
 
         // 게시글 삭제
         postRepository.delete(post);
@@ -434,6 +456,7 @@ public class CommunityService {
 
     private PostsByTagInfoResponse convertToDto(Post post) {
         List<PostTag> postTags = postTagRepository.findByPost(post);
+        List<Photo> photos = photoRepository.findByPost(post);
         List<PostService> postServices = postServiceRepository.findByPost(post);
         List<Comment> comments = commentRepository.findByPost(post);
         int postLikeCount = postLikeRepository.countByPostId(post.getId());
@@ -478,6 +501,9 @@ public class CommunityService {
                 .content(post.getContent())
                 .createdAt(post.getCreatedTime())
                 .modifiedAt(post.getModifiedTime())
+                .postImagePathUrls(photos.stream()
+                        .map(Photo::getPhotoPath)
+                        .collect(Collectors.toList()))
                 .author(PostsByTagInfoResponse.AuthorDto.builder()
                         .memberId(post.getMember().getMemberId())
                         .username(post.getMember().getUsername())
@@ -508,7 +534,10 @@ public class CommunityService {
   /**
    * 파일 업로드
    */
-    public ApiResult<?> uploadFile(MultipartFile file) throws Exception {
+  public ApiResult<List<String>> uploadFiles(List<MultipartFile> files) throws Exception {
+    List<String> uploadedFilePaths = new ArrayList<>();
+
+    for (MultipartFile file : files) {
       try {
         // 파일 내용을 Base64로 인코딩
         String fileContent = Base64.encodeBase64String(file.getBytes());
@@ -523,8 +552,8 @@ public class CommunityService {
         String randomUUID = UUID.randomUUID().toString();
         String fileName = timestamp + "_" + randomUUID + "." + fileExtension;
 
-        String folderPath = "images";
-        String apiUrl = "https://api.github.com/repos/cbnu-buddy/buddy/contents/" + folderPath + "/" + fileName;
+        // 새로 만든 레포지토리 최상위 디렉토리에 저장
+        String apiUrl = "https://api.github.com/repos/cbnu-buddy/storage/contents/" + fileName;
 
         // GitHub API에 보낼 요청 생성
         RestTemplate restTemplate = new RestTemplate();
@@ -541,7 +570,8 @@ public class CommunityService {
 
         // 결과 반환
         if (response.getStatusCode().is2xxSuccessful()) {
-          return ApiResult.success("파일 업로드 성공");
+          String uploadedFilePath = "https://raw.githubusercontent.com/cbnu-buddy/storage/main/" + fileName;
+          uploadedFilePaths.add(uploadedFilePath);
         } else {
           throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
@@ -549,4 +579,8 @@ public class CommunityService {
         throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
       }
     }
+
+    return ApiResult.success(uploadedFilePaths);
+  }
+
 }
