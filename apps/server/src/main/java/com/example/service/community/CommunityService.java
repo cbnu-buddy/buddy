@@ -223,10 +223,6 @@ public class CommunityService {
     public ApiResult<?> getRelatedTags(String query) {
         List<TagInfoResponse> relatedTagsResponse = getRelatedTagsDto(query);
 
-        if (relatedTagsResponse.isEmpty()) {
-            throw new CustomException(ErrorCode.SEARCH_RESULTS_NOT_FOUND);
-        }
-
         return ApiResult.success(relatedTagsResponse);
     }
 
@@ -258,10 +254,6 @@ public class CommunityService {
     public ApiResult<?> getPostsByTag(String tagName, int limit) {
 
         List<Post> posts = postRepository.findByTagName(tagName, Sort.by(Sort.Direction.DESC, "createdTime"));
-
-        if (posts.isEmpty()) {
-            throw new CustomException(ErrorCode.SEARCH_RESULTS_NOT_FOUND);
-        }
 
         // limit에 따른 결과 제한
         List<PostsByTagInfoResponse> response = posts.stream()
@@ -331,10 +323,6 @@ public class CommunityService {
         List<PostsByTagInfoResponse> posts = getPostsByQuery(query, limit);
         List<TagInfoResponse> relatedTags = getRelatedTagsDto(query);
 
-        if (posts.isEmpty() && relatedTags.isEmpty()) {
-            throw new CustomException(ErrorCode.SEARCH_RESULTS_NOT_FOUND);
-        }
-
         return ApiResult.success(SearchResponse.builder()
                 .relatedTags(relatedTags)
                 .posts(posts)
@@ -352,11 +340,6 @@ public class CommunityService {
 
         // 태그가 존재하지 않는 경우
         if (optionalTag.isEmpty()) {
-
-            // 관련 태그와 게시글이 모두 없는 경우 404 오류 반환
-            if (posts.isEmpty() && relatedTags.isEmpty()) {
-                throw new CustomException(ErrorCode.SEARCH_RESULTS_NOT_FOUND);
-            }
 
             return ApiResult.success(SearchTagsResponse.builder()
                     .tagId(null)

@@ -32,13 +32,13 @@ public class CommunityController {
     }
 
     @Operation(summary = "커뮤니티 게시글 수정하기", description = "")
-    @PutMapping("/private/community/{postId}")
+    @PutMapping("/private/community/posts/{postId}")
     public ApiResult<?> updatePost(@PathVariable Long postId, @RequestBody UpdatePostRequest updatePostRequest, HttpServletRequest request) {
         return communityService.updatePost(postId, updatePostRequest, request);
     }
 
     @Operation(summary = "커뮤니티 게시글 삭제하기", description = "")
-    @DeleteMapping("/private/community/{postId}")
+    @DeleteMapping("/private/community/posts/{postId}")
     public ApiResult<?> deletePost(@PathVariable Long postId, HttpServletRequest request) {
         return communityService.deletePost(postId, request);
     }
