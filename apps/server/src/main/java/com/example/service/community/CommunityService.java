@@ -495,4 +495,5 @@ public class CommunityService {
                 .likeCount(postLikeCount)
                 .build();
     }
+
 }
