@@ -14,4 +14,5 @@ public class UpdatePostRequest {
     private String content;
     private List<String> tags;
     private List<Long> serviceIds;
+    private List<String> postImagePathUrls;
 }

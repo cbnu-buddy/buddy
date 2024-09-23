@@ -20,17 +20,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.example.domain.community.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
@@ -43,6 +47,7 @@ public class CommunityService {
     private final TagRepository tagRepository;
     private final PostTagRepository postTagRepository;
     private final PostServiceRepository postServiceRepository;
+    private final PhotoRepository photoRepository;
     private final MemberRepository memberRepository;
     private final ServiceRepository serviceRepository;
     private final TokenProvider tokenProvider;
@@ -54,7 +59,7 @@ public class CommunityService {
     private final PlanRepository planRepository;
 
 
-    // 토큰에서 사용자 ID 추출
+  // 토큰에서 사용자 ID 추출
     public String getUserIdFromToken(HttpServletRequest request) {
         Authentication authentication = tokenProvider.getAuthentication(tokenProvider.resolveToken(request));
         Claims claims = tokenProvider.getTokenClaims(tokenProvider.resolveToken(request));
@@ -104,6 +109,14 @@ public class CommunityService {
             postServiceRepository.save(postService);
         }
 
+        // 사진 생성, 저장
+        for (String photoPath : postRequest.getPostImagePathUrls()) {
+            Photo photo = new Photo();
+            photo.setPost(post);
+            photo.setPhotoPath(photoPath);
+            photoRepository.save(photo);
+        }
+
         return ApiResult.success(Map.of("tagIds", tagIds,"postId", savedPost.getId()));
     }
 
@@ -127,9 +140,10 @@ public class CommunityService {
         post.setContent(updatePostRequest.getContent());
         post.setModifiedTime(LocalDateTime.now());
 
-        // 기존 태그, 서비스, 사진 삭제 (post_tags, post_services)
+        // 기존 태그, 서비스, 사진 삭제 (post_tags, post_services, photo table)
         deleteExistingPostTags(post);
         deleteExistingPostServices(post);
+        deleteExistingPhotos(post);
 
         // 수정된 태그, 서비스, 사진 저장
         for (String tagName : updatePostRequest.getTags()) {
@@ -144,7 +158,15 @@ public class CommunityService {
             postTagRepository.save(postTag);
         }
 
-        for (Long serviceId : updatePostRequest.getServiceIds()) {
+        for (String photoPath : updatePostRequest.getPostImagePathUrls()) {
+            Photo photo = new Photo();
+            photo.setPost(post);
+            photo.setPhotoPath(photoPath);
+            photoRepository.save(photo);
+        }
+
+
+      for (Long serviceId : updatePostRequest.getServiceIds()) {
             Service service = serviceRepository.findById(serviceId)
                     .orElseThrow(() -> new CustomException(ErrorCode.INVALID_SERVICE_ID));
             PostService postService = new PostService(post, service);
@@ -163,6 +185,11 @@ public class CommunityService {
     private void deleteExistingPostServices(Post post) {
         List<PostService> postServices = postServiceRepository.findByPost(post);
         postServiceRepository.deleteAll(postServices);
+    }
+
+    private void deleteExistingPhotos(Post post) {
+        List<Photo> photos = photoRepository.findByPost(post);
+        photoRepository.deleteAll(photos);
     }
 
     /**
@@ -184,6 +211,8 @@ public class CommunityService {
         // 기존 태그, 서비스, 사진 삭제
         deleteExistingPostTags(post);
         deleteExistingPostServices(post);
+        deleteExistingPhotos(post);
+
 
         // 게시글 삭제
         postRepository.delete(post);
@@ -425,6 +454,7 @@ public class CommunityService {
 
     private PostsByTagInfoResponse convertToDto(Post post) {
         List<PostTag> postTags = postTagRepository.findByPost(post);
+        List<Photo> photos = photoRepository.findByPost(post);
         List<PostService> postServices = postServiceRepository.findByPost(post);
         List<Comment> comments = commentRepository.findByPost(post);
         int postLikeCount = postLikeRepository.countByPostId(post.getId());
@@ -469,6 +499,9 @@ public class CommunityService {
                 .content(post.getContent())
                 .createdAt(post.getCreatedTime())
                 .modifiedAt(post.getModifiedTime())
+                .postImagePathUrls(photos.stream()
+                        .map(Photo::getPhotoPath)
+                        .collect(Collectors.toList()))
                 .author(PostsByTagInfoResponse.AuthorDto.builder()
                         .memberId(post.getMember().getMemberId())
                         .username(post.getMember().getUsername())
@@ -495,4 +528,5 @@ public class CommunityService {
                 .likeCount(postLikeCount)
                 .build();
     }
+
 }
