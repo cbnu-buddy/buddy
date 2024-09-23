@@ -98,7 +98,7 @@ public class SubscribeService {
         List<TagSubInfoResponse> tagResponses = subscribedTags.stream()
                 .map(tagSub -> TagSubInfoResponse.builder()
                         .tagId(tagSub.getTag().getId())
-                        .tags(tagSub.getTag().getTagName())
+                        .tag(tagSub.getTag().getTagName())
                         .isReceiveNotification(tagSub.getSubNotify())
                         .postCount(postRepository.countPostsByTagId(tagSub.getTag().getId()))
                         .build())
