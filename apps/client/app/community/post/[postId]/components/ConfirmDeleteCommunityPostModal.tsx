@@ -12,7 +12,7 @@ import { ToastInfoStore } from "@/store/components/ToastInfo";
 
 // 커뮤니티 게시글 삭제 API
 const deleteCommunityPost = (postId: string) => {
-  return axiosInstance.delete(`/private/community/${postId}`);
+  return axiosInstance.delete(`/private/community/posts/${postId}`);
 };
 
 interface ConfirmDeleteCommunityPostModalProps {
