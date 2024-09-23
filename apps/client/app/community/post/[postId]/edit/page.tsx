@@ -30,7 +30,7 @@ const modifyCommunityPost = ({
   postId: string;
   requestBody: CreatePostParams;
 }) => {
-  return axiosInstance.put(`/private/community/${postId}`, requestBody);
+  return axiosInstance.put(`/private/community/posts/${postId}`, requestBody);
 };
 
 interface DefaultProps {
