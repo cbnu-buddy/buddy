@@ -10,4 +10,5 @@ import java.util.List;
 public interface ReplyRepository extends JpaRepository<Reply, Long> {
     int countByCommentPostId(Long postId);
     List<Reply> findByCommentId(Long commentId);
+    boolean existsByCommentId(Long commentId);
 }
