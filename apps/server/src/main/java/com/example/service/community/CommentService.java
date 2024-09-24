@@ -12,6 +12,7 @@ import com.example.exception.ErrorCode;
 import com.example.repository.community.CommentRepository;
 import com.example.repository.community.PostRepository;
 import com.example.repository.community.CommentLikeRepository;
+import com.example.repository.community.ReplyRepository;
 import com.example.repository.member.MemberRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final ReplyRepository ReplyRepository;
 
     private final TokenProvider tokenProvider;
 
@@ -68,6 +70,11 @@ public class CommentService {
     public ApiResult<?> deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (ReplyRepository.existsByCommentId(commentId)) {
+          throw new CustomException(ErrorCode.COMMENT_HAS_REPLIES);
+        }
+
         commentRepository.delete(comment);
         return ApiResult.success("댓글이 삭제되었습니다.");
     }
