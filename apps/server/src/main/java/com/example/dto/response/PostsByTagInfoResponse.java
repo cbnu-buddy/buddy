@@ -21,11 +21,12 @@ public class PostsByTagInfoResponse {
     private LocalDateTime modifiedAt;
     private AuthorDto author;
     private List<TagsDto> tags;
-  private List<String> postImagePathUrls;
+    private List<String> postImagePathUrls;
     private int views;
     private List<ServiceDto> services;
     private List<CommentDto> comments;
     private int likeCount;
+    private boolean isLiked;
 
     @Getter
     @Setter
@@ -65,6 +66,7 @@ public class PostsByTagInfoResponse {
         private LocalDateTime createdAt;
         private AuthorDto writer;
         private List<ReplyDto> replies;
+        private boolean isLiked;
 
         @Getter
         @Setter
@@ -76,6 +78,7 @@ public class PostsByTagInfoResponse {
             @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
             private LocalDateTime createdAt;
             private AuthorDto writer;
+            private boolean isLiked;
         }
     }
 }
