@@ -27,7 +27,7 @@ public class SubscribeController {
     }
 
     @Operation(summary = "태그 구독 취소하기", description = "")
-    @DeleteMapping("/tags//{tagId}")
+    @DeleteMapping("/tags/{tagId}")
     public ApiResult<?> unsubscribeTag(HttpServletRequest request, @PathVariable Long tagId) {
         return subscribeService.unsubscribeTag(request, tagId);
     }
