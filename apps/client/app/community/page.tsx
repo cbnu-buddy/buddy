@@ -32,7 +32,7 @@ export default function Community() {
             width={45}
             height={45}
             quality={100}
-            className='rounded-md'
+            className='rounded-md object-cover'
           />
           <span className='ml-2 lift-up text-[#333d4b] font-bold'>
             커뮤니티
