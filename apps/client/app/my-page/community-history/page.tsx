@@ -9,7 +9,7 @@ import Link from "next/link";
 import { formatDate } from "@/utils/formatDate";
 import Loading from "@/app/loading";
 
-// 회원의 구독한 태그 목록 정보 조회 API
+// 내가 쓴 커뮤니티 게시글 목록 조회 API
 const fetchMyCommunityPostInfos = () => {
   return axiosInstance.get(`/private/community/posts/my`);
 };
