@@ -56,7 +56,7 @@ export default function FeedPostListItem(props: FeedPostListItemProps) {
                   alt='main_1Image'
                   fill
                   quality={100}
-                  className='rounded-md'
+                  className='rounded-md object-cover'
                 />
                 <div
                   className='absolute right-2 bottom-2 w-6 h-5 flex justify-center items-center rounded-xl'

@@ -50,7 +50,7 @@ export default function PostListItem(props: TagPostListItemProps) {
               alt='main_1Image'
               fill
               quality={100}
-              className='rounded-[0.275rem]'
+              className='rounded-[0.275rem] object-cover'
             />
             <div
               className='absolute right-[0.175rem] bottom-[0.175rem] w-6 h-5 flex justify-center items-center rounded-xl'

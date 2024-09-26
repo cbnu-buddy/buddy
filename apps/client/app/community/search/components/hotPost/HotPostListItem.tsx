@@ -130,7 +130,7 @@ export default function HotPostListItem(props: HotPostListItemProps) {
               fill
               // 이미지 비율 유지하며 부모 요소에 맞춤
               quality={100}
-              className='rounded-md'
+              className='rounded-md object-cover'
             />
             <div
               className='absolute right-[0.175rem] bottom-[0.175rem] w-6 h-5 flex justify-center items-center rounded-xl'
