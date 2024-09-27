@@ -14,7 +14,7 @@ const initialState = {
   isAuth: false,
 };
 
-export const userInfoStore = create(
+export const UserInfoStore = create(
   devtools((set) => ({
     userInfo: initialState,
     updateUserInfo: (newUserInfo: UserInfo) =>
