@@ -16,7 +16,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/private/upload")
 public class UploadController {
   private final UploadService uploadService;
 
