@@ -9,7 +9,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class TagSubInfoResponse {
     private Long tagId;
-    private String tag;
+    private String tagName;
     private Boolean isReceiveNotification;
     private Long postCount;
 }

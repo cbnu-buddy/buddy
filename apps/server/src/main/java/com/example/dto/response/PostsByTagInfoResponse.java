@@ -42,7 +42,7 @@ public class PostsByTagInfoResponse {
     @Builder
     public static class TagsDto {
         private Long tagId;
-        private String tag;
+        private String tagName;
     }
 
     @Getter
