@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class SearchTagsResponse {
     private Long tagId;
-    private String tag;
+    private String tagName;
     private Long postsCount;
     private List<TagInfoResponse> relatedTags; // 연관 태그
     private List<PostsByTagInfoResponse> posts; // 검색된 게시글들

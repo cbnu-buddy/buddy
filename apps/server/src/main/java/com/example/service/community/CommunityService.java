@@ -372,7 +372,7 @@ public class CommunityService {
 
       return ApiResult.success(SearchTagsResponse.builder()
         .tagId(null)
-        .tag(null)
+        .tagName(null)
         .postsCount(null)
         .relatedTags(relatedTags)
         .posts(posts)
@@ -386,7 +386,7 @@ public class CommunityService {
 
     return ApiResult.success(SearchTagsResponse.builder()
       .tagId(tag.getId())
-      .tag(tag.getTagName())
+      .tagName(tag.getTagName())
       .postsCount(postsCount)
       .relatedTags(relatedTags)
       .posts(posts)
@@ -505,7 +505,7 @@ public class CommunityService {
           .tags(postTags.stream()
             .map(tag -> PostsByTagInfoResponse.TagsDto.builder()
               .tagId(tag.getTag().getId())
-              .tag(tag.getTag().getTagName())
+              .tagName(tag.getTag().getTagName())
               .build())
             .collect(Collectors.toList()))
           .views(post.getViews())
