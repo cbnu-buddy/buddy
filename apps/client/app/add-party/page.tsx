@@ -128,7 +128,7 @@ export default function AddParty() {
                     ~
                     {partySelectedPlanInfo.planDetailInfos[0].price.toLocaleString()}
                     원
-                    {partySelectedPlanInfo.tag === 'hot' ? (
+                    {partySelectedPlanInfo.tagName === 'hot' ? (
                       <span>
                         <Image
                           src={hotImg}
@@ -139,7 +139,7 @@ export default function AddParty() {
                           className=''
                         />
                       </span>
-                    ) : partySelectedPlanInfo.tag === 'event' ? (
+                    ) : partySelectedPlanInfo.tagName === 'event' ? (
                       <span>
                         <Image
                           src={eventImg}
