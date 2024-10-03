@@ -19,7 +19,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'netflix image',
     name: '넷플릭스',
     category: 'media',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://www.netflix.com/',
     planDetailInfos: [
       {
@@ -92,7 +92,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'wave image',
     name: '웨이브',
     category: 'media',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://www.wavve.com',
     planDetailInfos: [
       {
@@ -165,7 +165,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'watcha image',
     name: '왓챠',
     category: 'media',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://watcha.com',
     planDetailInfos: [
       {
@@ -274,7 +274,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'tving image',
     name: '티빙',
     category: 'media',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://www.tving.com/',
     planDetailInfos: [
       {
@@ -414,7 +414,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'youtube premium image',
     name: '유튜브 프리미엄',
     category: 'media',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://www.youtube.com',
     planDetailInfos: [
       {
@@ -472,7 +472,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'coupang play image',
     name: '쿠팡플레이',
     category: 'media',
-    tag: 'new',
+    tagName: 'new',
     homePageUrl: 'https://www.coupangplay.com',
     planDetailInfos: [
       {
@@ -534,7 +534,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'ridi books image',
     name: '리디북스',
     category: 'book',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://ridibooks.com',
     planDetailInfos: [
       {
@@ -592,7 +592,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'mili image',
     name: '밀리의 서재',
     category: 'book',
-    tag: 'event',
+    tagName: 'event',
     homePageUrl: 'https://www.millie.co.kr',
     planDetailInfos: [
       {
@@ -725,7 +725,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'spotify image',
     name: '스포티파이',
     category: 'music',
-    tag: 'hot',
+    tagName: 'hot',
     homePageUrl: 'https://www.spotify.com',
     planDetailInfos: [
       {
