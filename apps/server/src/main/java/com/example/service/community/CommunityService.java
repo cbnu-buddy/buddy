@@ -461,7 +461,7 @@ public class CommunityService {
                   .replyId(reply.getId())
                   .replyContent(reply.getContent())
                   .likeCount(replyLikeRepository.countByReplyId(reply.getId()))
-                  .isLiked(isReplyLiked)
+                  .IsLiked(isReplyLiked)
                   .createdAt(reply.getCreatedTime())
                   .writer(PostsByTagInfoResponse.AuthorDto.builder()
                     .memberId(reply.getMember().getMemberId())
@@ -476,7 +476,7 @@ public class CommunityService {
               .commentId(comment.getId())
               .commentContent(comment.getPostContent())
               .likeCount(commentLikeRepository.countByCommentId(comment.getId()))
-              .isLiked(isCommentLiked)
+              .IsLiked(isCommentLiked)
               .createdAt(comment.getCreatedTime())
               .writer(PostsByTagInfoResponse.AuthorDto.builder()
                 .memberId(comment.getMember().getMemberId())
@@ -521,7 +521,7 @@ public class CommunityService {
             .collect(Collectors.toList()))
           .comments(commentDtos)
           .likeCount(postLikeCount)
-          .isLiked(isLiked)
+          .IsLiked(isLiked)
           .build();
     }
 }
