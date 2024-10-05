@@ -436,92 +436,95 @@ public class CommunityService {
   }
 
   private PostsByTagInfoResponse convertToDto(Post post) {
-      List<PostTag> postTags = postTagRepository.findByPost(post);
-      List<Photo> photos = photoRepository.findByPost(post);
-      List<PostService> postServices = postServiceRepository.findByPost(post);
-      List<Comment> comments = commentRepository.findByPost(post);
-      int postLikeCount = postLikeRepository.countByPostId(post.getId());
+    // 토큰이 없을 경우
+    String token = tokenProvider.resolveToken(currentRequest);
+    boolean isLoggedIn = token != null && tokenProvider.getAuthentication(token) != null;
 
-      boolean isLoggedIn = tokenProvider.getAuthentication(tokenProvider.resolveToken(currentRequest)) != null;
-      Member member = isLoggedIn ? memberRepository.findByUserId(getUserIdFromToken(currentRequest)).orElse(null) : null;
+    // 로그인 상태일 때의 사용자 정보 처리
+    Member member = isLoggedIn ? memberRepository.findByUserId(getUserIdFromToken(currentRequest)).orElse(null) : null;
 
-      boolean isLiked = isLoggedIn && member != null && postLikeRepository.existsByPostAndMember(post, member);
+    // 게시글에 대한 좋아요 여부 판단
+    boolean isLiked = isLoggedIn && member != null && postLikeRepository.existsByPostAndMember(post, member);
 
-      List<PostsByTagInfoResponse.CommentDto> commentDtos = comments.stream()
-        .map(comment -> {
-          // reply 조회
-          List<Reply> replies = replyRepository.findByCommentId(comment.getId());
+    // 댓글 및 답글 데이터 변환
+    List<PostsByTagInfoResponse.CommentDto> commentDtos = commentRepository.findByPost(post).stream()
+      .map(comment -> {
+        // 해당 댓글의 답글들 가져오기
+        List<Reply> replies = replyRepository.findByCommentId(comment.getId());
 
-          boolean isCommentLiked = isLoggedIn && member != null && commentLikeRepository.existsByCommentAndMember(comment, member);
+        boolean isCommentLiked = isLoggedIn && member != null && commentLikeRepository.existsByCommentAndMember(comment, member);
 
-          List<PostsByTagInfoResponse.CommentDto.ReplyDto> replyDtos = replies.stream()
-            .map(reply -> {
-              boolean isReplyLiked = isLoggedIn && member != null && replyLikeRepository.existsByReplyAndMember(reply, member);
-              return PostsByTagInfoResponse.CommentDto.ReplyDto.builder()
-                  .replyId(reply.getId())
-                  .replyContent(reply.getContent())
-                  .likeCount(replyLikeRepository.countByReplyId(reply.getId()))
-                  .IsLiked(isReplyLiked)
-                  .createdAt(reply.getCreatedTime())
-                  .writer(PostsByTagInfoResponse.AuthorDto.builder()
-                    .memberId(reply.getMember().getMemberId())
-                    .username(reply.getMember().getUsername())
-                    .profileImagePathUrl(reply.getMember().getProfile_path())
-                    .build())
-                  .build();
-            })
-            .collect(Collectors.toList());
-
-          return PostsByTagInfoResponse.CommentDto.builder()
-              .commentId(comment.getId())
-              .commentContent(comment.getPostContent())
-              .likeCount(commentLikeRepository.countByCommentId(comment.getId()))
-              .IsLiked(isCommentLiked)
-              .createdAt(comment.getCreatedTime())
+        // 각 답글에 대한 데이터 변환
+        List<PostsByTagInfoResponse.CommentDto.ReplyDto> replyDtos = replies.stream()
+          .map(reply -> {
+            boolean isReplyLiked = isLoggedIn && member != null && replyLikeRepository.existsByReplyAndMember(reply, member);
+            return PostsByTagInfoResponse.CommentDto.ReplyDto.builder()
+              .replyId(reply.getId())
+              .replyContent(reply.getContent())
+              .likeCount(replyLikeRepository.countByReplyId(reply.getId()))
+              .IsLiked(isReplyLiked)
+              .createdAt(reply.getCreatedTime())
               .writer(PostsByTagInfoResponse.AuthorDto.builder()
-                .memberId(comment.getMember().getMemberId())
-                .username(comment.getMember().getUsername())
-                .profileImagePathUrl(comment.getMember().getProfile_path())
+                .memberId(reply.getMember().getMemberId())
+                .username(reply.getMember().getUsername())
+                .profileImagePathUrl(reply.getMember().getProfile_path())
                 .build())
-              .replies(replyDtos)
               .build();
-        })
-        .collect(Collectors.toList());
+          })
+          .collect(Collectors.toList());
 
-      return PostsByTagInfoResponse.builder()
-          .postId(post.getId())
-          .title(post.getTitle())
-          .content(post.getContent())
-          .createdAt(post.getCreatedTime())
-          .modifiedAt(post.getModifiedTime())
-          .postImagePathUrls(photos.stream()
-            .map(Photo::getPhotoPath)
-            .collect(Collectors.toList()))
-          .author(PostsByTagInfoResponse.AuthorDto.builder()
-            .memberId(post.getMember().getMemberId())
-            .username(post.getMember().getUsername())
-            .profileImagePathUrl(post.getMember().getProfile_path())
+        // 댓글 DTO 생성
+        return PostsByTagInfoResponse.CommentDto.builder()
+          .commentId(comment.getId())
+          .commentContent(comment.getPostContent())
+          .likeCount(commentLikeRepository.countByCommentId(comment.getId()))
+          .IsLiked(isCommentLiked)
+          .createdAt(comment.getCreatedTime())
+          .writer(PostsByTagInfoResponse.AuthorDto.builder()
+            .memberId(comment.getMember().getMemberId())
+            .username(comment.getMember().getUsername())
+            .profileImagePathUrl(comment.getMember().getProfile_path())
             .build())
-          .tags(postTags.stream()
-            .map(tag -> PostsByTagInfoResponse.TagsDto.builder()
-              .tagId(tag.getTag().getId())
-              .tagName(tag.getTag().getTagName())
-              .build())
-            .collect(Collectors.toList()))
-          .views(post.getViews())
-          .services(postServices.stream()
-            .map(postService -> PostsByTagInfoResponse.ServiceDto.builder()
-              .serviceId(postService.getService().getId())
-              .planIds(planRepository.findByService_Id(postService.getService().getId()).stream()
-                .map(Plan::getId)
-                .collect(Collectors.toList()))
-              .name(postService.getService().getServiceName())
-              .url(postService.getService().getUrl())
-              .build())
-            .collect(Collectors.toList()))
-          .comments(commentDtos)
-          .likeCount(postLikeCount)
-          .IsLiked(isLiked)
+          .replies(replyDtos)
           .build();
-    }
+      })
+      .collect(Collectors.toList());
+
+    // 게시글에 대한 전체 DTO 반환
+    return PostsByTagInfoResponse.builder()
+      .postId(post.getId())
+      .title(post.getTitle())
+      .content(post.getContent())
+      .createdAt(post.getCreatedTime())
+      .modifiedAt(post.getModifiedTime())
+      .postImagePathUrls(photoRepository.findByPost(post).stream()
+        .map(Photo::getPhotoPath)
+        .collect(Collectors.toList()))
+      .author(PostsByTagInfoResponse.AuthorDto.builder()
+        .memberId(post.getMember().getMemberId())
+        .username(post.getMember().getUsername())
+        .profileImagePathUrl(post.getMember().getProfile_path())
+        .build())
+      .tags(postTagRepository.findByPost(post).stream()
+        .map(tag -> PostsByTagInfoResponse.TagsDto.builder()
+          .tagId(tag.getTag().getId())
+          .tagName(tag.getTag().getTagName())
+          .build())
+        .collect(Collectors.toList()))
+      .views(post.getViews())
+      .services(postServiceRepository.findByPost(post).stream()
+        .map(postService -> PostsByTagInfoResponse.ServiceDto.builder()
+          .serviceId(postService.getService().getId())
+          .planIds(planRepository.findByService_Id(postService.getService().getId()).stream()
+            .map(Plan::getId)
+            .collect(Collectors.toList()))
+          .name(postService.getService().getServiceName())
+          .url(postService.getService().getUrl())
+          .build())
+        .collect(Collectors.toList()))
+      .comments(commentDtos)
+      .likeCount(postLikeRepository.countByPostId(post.getId()))
+      .IsLiked(isLiked)
+      .build();
+  }
 }
