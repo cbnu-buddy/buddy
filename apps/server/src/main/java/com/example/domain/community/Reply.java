@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -30,6 +32,9 @@ public class Reply {
     private LocalDateTime createdTime;
 
     private LocalDateTime modifiedTime;
+
+    @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReplyLike> replyLikes = new ArrayList<>();
 
     public Reply(Comment comment, Member member, String content) {
         this.comment = comment;
