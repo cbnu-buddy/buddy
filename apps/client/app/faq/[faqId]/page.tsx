@@ -292,7 +292,7 @@ export default function FaqDetail(props: DefaultProps) {
             key={faqId}
             className='px-2 py-1 text-[#656565] bg-[#efefef] text-xs font-semibold rounded-[0.3rem]'
           >
-            {tag}
+            {tagName}
           </span>
         ))}
       </div>

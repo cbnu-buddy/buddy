@@ -134,7 +134,7 @@ export default function JoinParty() {
                       ].maxPartyMemberNum
                     ).toLocaleString()}
                     원{' '}
-                    {partySelectedPlanInfo.tag === 'hot' ? (
+                    {partySelectedPlanInfo.tagName === 'hot' ? (
                       <span>
                         <Image
                           src={hotImg}
@@ -145,7 +145,7 @@ export default function JoinParty() {
                           className=''
                         />
                       </span>
-                    ) : partySelectedPlanInfo.tag === 'event' ? (
+                    ) : partySelectedPlanInfo.tagName === 'event' ? (
                       <span>
                         <Image
                           src={eventImg}
