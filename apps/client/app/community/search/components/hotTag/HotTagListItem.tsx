@@ -15,7 +15,7 @@ export default function HotTagListItem(props: HotTagListItemProps) {
 
   return (
     <Link
-      href={`/community/feed?tag=${tagInfo.tag}`}
+      href={`/community/feed?tag=${tagInfo.tagName}`}
       className='flex items-center gap-x-3 h-[2.6rem]'
     >
       <div
@@ -41,7 +41,7 @@ export default function HotTagListItem(props: HotTagListItemProps) {
         </svg>
       </div>
       <div className='w-full overflow-hidden whitespace-nowrap text-ellipsis text-[0.825rem] text-[#333d4b] font-medium'>
-        {tagInfo.tag}
+        {tagInfo.tagName}
       </div>
     </Link>
   );

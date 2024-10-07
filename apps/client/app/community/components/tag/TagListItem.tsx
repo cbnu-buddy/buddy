@@ -51,7 +51,7 @@ export default function TagListItem(props: TagListItemProps) {
           !isSelectedTag ? 'text-[#3a8af9]' : 'text-white'
         }  font-medium`}
       >
-        {tagInfo.tag}
+        {tagInfo.tagName}
       </span>
     </button>
   );

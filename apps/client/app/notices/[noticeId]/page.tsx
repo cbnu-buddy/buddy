@@ -67,7 +67,7 @@ export default function NoticeDetail(props: DefaultProps) {
         </h1>
 
         <div className='flex gap-x-[0.375rem]'>
-          {dataSet[parseInt(noticeId) - 1].tags.map((tag: string) => (
+          {dataSet[parseInt(noticeId) - 1].tags.map((tagName: string) => (
             <span
               key={noticeId}
               className='px-2 py-1 text-[#656565] bg-[#efefef] text-xs font-semibold rounded-[0.3rem]'

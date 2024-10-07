@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import axiosInstance from '@/utils/axiosInstance';
 import { useEffect, useState } from 'react';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import { useMutation } from '@tanstack/react-query';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
 
@@ -22,9 +22,9 @@ export default function Navbar() {
     },
   });
 
-  const userInfo = userInfoStore((state: any) => state.userInfo);
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
-  const removeUserInfo = userInfoStore((state: any) => state.removeUserInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
+  const removeUserInfo = UserInfoStore((state: any) => state.removeUserInfo);
 
   const [rightPos, setRightPos] = useState('-right-full');
 

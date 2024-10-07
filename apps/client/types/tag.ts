@@ -1,6 +1,6 @@
 export interface TagInfo {
   tagId: number;
-  tag: string;
+  tagName: string;
 }
 
 export interface MySubscribedTagInfo extends TagInfo {

@@ -13,7 +13,7 @@ const initialState = {
   category: '',
   originPrice: 0,
   discountedPrice: 0,
-  tag: '',
+  tagName: '',
   planDetailInfos: [],
   selectedPlanName: '',
   selectedPlanId: 0,

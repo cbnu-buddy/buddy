@@ -1,14 +1,9 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import Loading from "@/app/loading";
-import axiosInstance from "@/utils/axiosInstance";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { MySubscribedTagInfo } from "@/types/tag";
-import SubscribedTagListItem from "./SubscribedTagListItem";
-import EmptySubscribedTagListItem from "./EmptySubscribedTagListItem";
-import UnSubscribedTagListItem from "./UnSubscribedTagListItem";
+import { MySubscribedTagInfo } from '@/types/tag';
+import SubscribedTagListItem from './SubscribedTagListItem';
+import EmptySubscribedTagListItem from './EmptySubscribedTagListItem';
+import UnSubscribedTagListItem from './UnSubscribedTagListItem';
 
 interface SubscribedTagListProps {
   mySubscribedTagInfos: MySubscribedTagInfo[];
@@ -18,13 +13,13 @@ interface SubscribedTagListProps {
   setIsOpenBottomDrawer: React.Dispatch<React.SetStateAction<boolean>>;
   selectedTagInfo: {
     tagId: number;
-    tag: string;
+    tagName: string;
     isReceiveNotification: boolean;
   };
   setSelectedTagInfo: React.Dispatch<
     React.SetStateAction<{
       tagId: number;
-      tag: string;
+      tagName: string;
       isReceiveNotification: boolean;
     }>
   >;
@@ -39,12 +34,10 @@ export default function SubscribedTagList(props: SubscribedTagListProps) {
     setSelectedTagInfo,
   } = props;
 
-  const router = useRouter();
-
   if (mySubscribedTagInfos.length === 0) return <EmptySubscribedTagListItem />;
 
   return (
-    <div className="flex flex-col gap-y-3">
+    <div className='flex flex-col gap-y-3'>
       {mySubscribedTagInfos.map(
         (mySubscribedTagInfo: MySubscribedTagInfo, index: number) =>
           mySubscribedTagInfo.isSubscribed ? (

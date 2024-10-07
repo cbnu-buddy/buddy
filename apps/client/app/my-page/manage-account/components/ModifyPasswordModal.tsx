@@ -6,7 +6,7 @@ import axiosInstance from '@/utils/axiosInstance';
 import { AxiosError } from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 
 interface ModifyPasswordModalProps {
   openModifyPasswordModal: string | undefined;
@@ -33,7 +33,7 @@ export default function ModifyPasswordModal({
   openModifyPasswordModal,
   setOpenModifyPasswordModal,
 }: ModifyPasswordModalProps) {
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const modifyPasswordMutation = useMutation({
     mutationFn: modifyPassword,

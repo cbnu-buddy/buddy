@@ -25,8 +25,10 @@ export default function SearchTagListItem(props: HotTagListItemProps) {
     <button
       ref={itemRef} // Add this line
       onClick={() => {
-        setSearchQuery(tagInfo.tag);
-        router.push(`/community/search?tag=${encodeURIComponent(tagInfo.tag)}`);
+        setSearchQuery(tagInfo.tagName);
+        router.push(
+          `/community/search?tag=${encodeURIComponent(tagInfo.tagName)}`
+        );
         setIsSUccessSearchResult(true);
       }}
       className={`w-full flex items-center gap-x-3 bg-white hover:bg-[#f2f4f6] focus:bg-[#f2f4f6] focus:outline-none p-[0.4rem] rounded-md ${className}`} // Add className
@@ -51,7 +53,7 @@ export default function SearchTagListItem(props: HotTagListItemProps) {
         ></path>
       </svg>
 
-      <span className='text-inherit font-medium'>{tagInfo.tag}</span>
+      <span className='text-inherit font-medium'>{tagInfo.tagName}</span>
     </button>
   );
 }

@@ -7,7 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import Image from 'next/image';
 import LottieCrown from './LottieCrown';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import leaderUserdefaultProfileImg from '@/public/images/default_user_profile_blue_img.png';
 import defaultUserProfileImg from '@/public/images/default_user_profile_green_img.png';
 
@@ -45,7 +45,7 @@ export default function ModifyPartyRecruitmentNumModal({
   sortedMembers,
   resData,
 }: ModifyPartyRecruitmentNumModalProps) {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
 
   const modifyLeaderAccountInfoMutation = useMutation({
     mutationFn: modifyPartyRecruitmentNumInfo,

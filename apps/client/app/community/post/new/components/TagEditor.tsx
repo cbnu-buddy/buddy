@@ -1,8 +1,18 @@
 'use client';
 
 import { relatedSearchTagInfos } from '@/data/mock/tagInfos';
+import axiosInstance from '@/utils/axiosInstance';
 import useDebounce from '@/utils/hooks/useDebounce';
+import { useQuery } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+// 플랜 정보 조회 API
+const fetchRelatedSearchTagInfos = ({ queryKey }: any) => {
+  const tagName = queryKey[1];
+  return axiosInstance.get(
+    `/public/community/search/related-tags?query=${tagName}`
+  );
+};
 
 interface TagEditorProps {
   tagList: string[];
@@ -11,6 +21,12 @@ interface TagEditorProps {
 
 export default function TagEditor(props: TagEditorProps) {
   const { tagList, setTagList } = props;
+
+  const { isPending, isError, data, error } = useQuery({
+    queryKey: ['relatedSearchTagInfos'],
+    queryFn: fetchRelatedSearchTagInfos,
+    retry: 0,
+  });
 
   const resData = relatedSearchTagInfos;
 
@@ -268,14 +284,14 @@ export default function TagEditor(props: TagEditorProps) {
               <button
                 key={index}
                 onClick={() => {
-                  if (!tagList.includes(tagInfo.tag)) {
-                    setTagList([...tagList, tagInfo.tag]);
+                  if (!tagList.includes(tagInfo.tagName)) {
+                    setTagList([...tagList, tagInfo.tagName]);
                   }
                   setTagName('');
                 }}
                 className='w-full text-start hover:bg-[#f8f8f8] pl-3 pr-1 py-[0.375rem] search-result-item outline-none focus:text-[#3a8af9]'
               >
-                {tagInfo.tag}
+                {tagInfo.tagName}
               </button>
             ))}
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import axiosInstance from '@/utils/axiosInstance';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
 import tossPaymentAxiosInstance from '@/utils/tossPaymentAxiosInstance';
@@ -47,8 +47,8 @@ const addPoint = (point: number) => {
 };
 
 export default function PaymentsSuccess() {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const params = useSearchParams();
   const router = useRouter();

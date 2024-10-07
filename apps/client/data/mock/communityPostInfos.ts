@@ -17,15 +17,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -131,15 +131,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -245,15 +245,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -359,15 +359,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -473,15 +473,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -587,15 +587,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -701,15 +701,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -815,15 +815,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -929,15 +929,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -1043,15 +1043,15 @@ export const communityPostInfos: PostInfo[] = [
     tags: [
       {
         tagId: 1,
-        tag: '애니메이션',
+        tagName: '애니메이션',
       },
       {
         tagId: 2,
-        tag: '원피스',
+        tagName: '원피스',
       },
       {
         tagId: 1,
-        tag: '에그헤드',
+        tagName: '에그헤드',
       },
     ],
     views: 67,
@@ -1155,15 +1155,15 @@ export const communityPostInfo: PostInfo = {
   tags: [
     {
       tagId: 1,
-      tag: '애니메이션',
+      tagName: '애니메이션',
     },
     {
       tagId: 2,
-      tag: '원피스',
+      tagName: '원피스',
     },
     {
       tagId: 1,
-      tag: '에그헤드',
+      tagName: '에그헤드',
     },
   ],
   views: 67,
