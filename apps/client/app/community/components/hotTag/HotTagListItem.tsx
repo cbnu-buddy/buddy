@@ -1,6 +1,3 @@
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import testImg from '@/public/images/test.jpg';
 import { TagInfo } from '@/types/tag';
 import Link from 'next/link';
 
@@ -11,11 +8,9 @@ interface HotTagListItemProps {
 export default function HotTagListItem(props: HotTagListItemProps) {
   const { tagInfo } = props;
 
-  const router = useRouter();
-
   return (
     <Link
-      href={`/community/feed?tag=${tagInfo.tag}`}
+      href={`/community/feed?tag=${tagInfo.tagName}`}
       className='flex items-center gap-x-3 h-[2.6rem]'
     >
       <div
@@ -41,7 +36,7 @@ export default function HotTagListItem(props: HotTagListItemProps) {
         </svg>
       </div>
       <div className='w-full overflow-hidden whitespace-nowrap text-ellipsis text-[0.825rem] text-[#333d4b] font-medium'>
-        {tagInfo.tag}
+        {tagInfo.tagName}
       </div>
     </Link>
   );

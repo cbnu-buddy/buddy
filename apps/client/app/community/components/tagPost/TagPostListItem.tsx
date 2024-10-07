@@ -24,15 +24,21 @@ export default function TagPostListItem(props: TagPostListItemProps) {
       <div className='w-full flex justify-between'>
         <div className='w-full flex flex-col justify-start gap-y-1 py-3'>
           <div className='flex items-center gap-x-[0.375rem]'>
-            <div className='relative w-[30px] h-[30px]'>
-              <Image
-                src='https://avatars.githubusercontent.com/u/119295431?v=4'
-                alt='profileImage'
-                fill
-                quality={100}
-                className='rounded-full'
-              />
-            </div>
+            {postInfo.author.profileImagePathUrl ? (
+              <div className='relative w-[30px] h-[30px]'>
+                <Image
+                  src={postInfo.author.profileImagePathUrl}
+                  alt='profileImage'
+                  fill
+                  quality={100}
+                  className='rounded-full'
+                />
+              </div>
+            ) : (
+              <span className='w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full'>
+                {postInfo.author.username.charAt(0)}
+              </span>
+            )}
             <span className='text-xs text-[#4e5968]'>
               {postInfo.author.username}
             </span>
@@ -40,27 +46,32 @@ export default function TagPostListItem(props: TagPostListItemProps) {
           <p className='text-[#333d4b] font-medium'>{postInfo.title}</p>
         </div>
 
-        <div className='flex flex-col justify-between py-3'>
-          <div className='text-xs text-[#4e5968] text-right'>
+        <div className='flex flex-col justify-between py-[0.6rem]'>
+          <span className='text-xs text-[#4e5968] text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-full'>
             {timeAgo(postInfo.createdAt)}
-          </div>
-          <div className='relative w-[85px] h-[45px]'>
-            <Image
-              src={testImg}
-              alt='main_1Image'
-              fill
-              quality={100}
-              className='rounded-[0.275rem] object-cover'
-            />
-            <div
-              className='absolute right-[0.175rem] bottom-[0.175rem] w-6 h-5 flex justify-center items-center rounded-xl'
-              style={{ background: 'rgba(16, 19, 34, 0.6)' }}
-            >
-              <span className='text-white text-xs'>
-                {postInfo.postImagePathUrls.length}
-              </span>
+          </span>
+
+          {postInfo.postImagePathUrls.length !== 0 && (
+            <div className='relative flex justify-center items-center'>
+              <div className='relative w-[100px] h-[55px]'>
+                <Image
+                  src={postInfo.postImagePathUrls[0]}
+                  alt='main_1Image'
+                  fill
+                  quality={100}
+                  className='rounded-md object-cover'
+                />
+                <div
+                  className='absolute right-[0.175rem] bottom-[0.175rem] w-6 h-5 flex justify-center items-center rounded-xl'
+                  style={{ background: 'rgba(16, 19, 34, 0.6)' }}
+                >
+                  <span className='text-white text-xs'>
+                    {postInfo.postImagePathUrls.length}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Link>

@@ -18,12 +18,13 @@ import { useQuery } from '@tanstack/react-query';
 import { formatDate } from '@/utils/formatDate';
 import Loading from '@/app/loading';
 import questionMarkImg from '@/public/images/question_mark.png';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import { Toast } from 'flowbite-react';
 
 import ModifyLeaderAccountInfoModal from './components/ModifyLeaderAccountInfoModal';
 import ModifyPartyRecruitmentNumModal from './components/ModifyPartyRecruitmentNumModal';
 import DisbandPartyModal from './components/DisbandPartyModal';
+import { ToastInfoStore } from '@/store/ToastInfo';
 
 // 파티 정보 조회 API
 const fetchPartyDetailInfo = ({ queryKey }: any) => {
@@ -76,9 +77,16 @@ const LottieCrown = dynamic(() => import('./components/LottieCrown'), {
 });
 
 export default function PartyDetail() {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
 
   const partyId = usePathname().split('/').pop() || ''; // Ensure partyId is never undefined
+
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
 
   const { isPending, data } = useQuery({
     queryKey: ['unMatchedPlanPartyInfo', partyId],
@@ -186,11 +194,8 @@ export default function PartyDetail() {
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        setIsOpenCopyCompleteToast(false);
-
-        setTimeout(() => {
-          setIsOpenCopyCompleteToast(true);
-        }, 50);
+        updateToastMessage(`링크가 복사됐어요`);
+        updateOpenToastStatus(true);
       })
       .catch(() => {
         alert('복사에 실패했습니다.');

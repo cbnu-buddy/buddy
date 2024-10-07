@@ -2,7 +2,7 @@ import { Modal } from 'flowbite-react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { useEffect, useState, useRef } from 'react';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 
 interface AddPointModalProps {
   openAddPointModal: string | undefined;
@@ -21,7 +21,7 @@ export default function AddPointModal({
   setRechargePoint,
   rechargePoint,
 }: AddPointModalProps) {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
 
   const [isDropdownMousedown, setIsDropdownMousedown] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

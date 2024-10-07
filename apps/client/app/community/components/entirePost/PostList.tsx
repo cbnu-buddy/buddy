@@ -1,58 +1,36 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import Loading from '@/app/loading';
 import axiosInstance from '@/utils/axiosInstance';
-import useDebounce from '@/utils/hooks/useDebounce';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import EmptyPostListItem from './EmptyPostListItem';
 import PostListItem from './PostListItem';
 import { PostInfo } from '@/types/post';
-import { communityPostInfos } from '@/data/mock/communityPostInfos';
 
-interface TagPostListProps {
-  searchQuery: string;
-}
+// 커뮤니티 최신 게시글 목록 정보 조회 API
+const fetchHotPostInfos = () => {
+  return axiosInstance.get(`/public/community/posts/latest?limit=${10}`);
+};
 
-// 시험 목록 반환 API (10개 게시글 단위로)
-// const fetchExams = async ({ queryKey }: any) => {
-//   const page = queryKey[1];
-//   const searchQuery = queryKey[2];
-//   const response = await axiosInstance.get(
-//     `${process.env.NEXT_PUBLIC_API_VERSION}/assignment/?page=${page}&limit=10&sort=-createdAt&q=title,course,writer=${searchQuery}`
-//   );
-//   return response.data;
-// };
+export default function PostList() {
+  const { isPending, data } = useQuery({
+    queryKey: ['postInfos'],
+    queryFn: fetchHotPostInfos,
+  });
 
-export default function PostList({ searchQuery }: TagPostListProps) {
-  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const communityPostInfos: PostInfo[] = data?.data.response;
 
-  const params = useSearchParams();
-
-  const page = Number(params?.get('page')) || 1;
-
-  // const { isPending, data } = useQuery({
-  //   queryKey: ['examList', page, debouncedSearchQuery],
-  //   queryFn: fetchExams,
-  // });
-
-  const router = useRouter();
-
-  // const resData = data?.data;
-  const resData = communityPostInfos;
-
-  // if (isPending) return <Loading />;
+  if (isPending) return <Loading />;
 
   return (
     <div className='mt-3 flex flex-col gap-y-3'>
-      {resData?.length === 0 && <EmptyPostListItem />}
-      {resData?.map((hotPostInfo: PostInfo, index: number) => (
+      {communityPostInfos?.length === 0 && <EmptyPostListItem />}
+      {communityPostInfos?.map((hotPostInfo: PostInfo, index: number) => (
         <PostListItem
           postInfo={hotPostInfo}
           key={index}
           index={index}
-          length={resData.length}
+          length={communityPostInfos.length}
         />
       ))}
     </div>

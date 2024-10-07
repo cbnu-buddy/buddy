@@ -217,7 +217,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'laftel image',
     name: '라프텔',
     category: 'media',
-    tag: '',
+    tagName: '',
     homePageUrl: 'https://laftel.net/',
     planDetailInfos: [
       {
@@ -347,7 +347,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'disney plus image',
     name: '디즈니+',
     category: 'media',
-    tag: '',
+    tagName: '',
     homePageUrl: 'https://www.disneyplus.com',
     planDetailInfos: [
       {
@@ -650,7 +650,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'yes24 image',
     name: '예스24 크레마클럽',
     category: 'book',
-    tag: '',
+    tagName: '',
     homePageUrl: 'http://www.yes24.com',
     planDetailInfos: [
       {
@@ -782,7 +782,7 @@ export const partySelectedPlanInfos: PartySelectedPlanInfo[] = [
     iconImgAlt: 'apple music image',
     name: '애플 뮤직',
     category: 'music',
-    tag: '',
+    tagName: '',
     homePageUrl: 'https://music.apple.com',
     planDetailInfos: [
       {

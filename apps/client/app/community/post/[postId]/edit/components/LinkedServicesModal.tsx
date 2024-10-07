@@ -25,8 +25,6 @@ export default function LinkedServicesModal({
   const [selectedServicesTemp, setSelectedServicesTemp] =
     useState<number[]>(selectedServices);
 
-  console.log(selectedServicesTemp);
-
   useEffect(() => {
     AOS.init();
   }, []);

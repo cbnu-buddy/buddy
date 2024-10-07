@@ -1,6 +1,6 @@
 'use client';
 
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
 import React, { useState } from 'react';
 import ModifyEmailModal from './components/ModifyEmailModal';
@@ -8,8 +8,8 @@ import ModifyUsernameModal from './components/ModifyUsernameModal';
 import ModifyPasswordModal from './components/ModifyPasswordModal';
 
 export default function ManageAccount() {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const [openModifyEmailModal, setOpenModifyEmailModal] = useState<
     string | undefined

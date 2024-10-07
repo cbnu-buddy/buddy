@@ -2,7 +2,7 @@ import { MessagePayload, onMessage } from 'firebase/messaging';
 import { useEffect, useState } from 'react';
 import { messaging } from '../firebase';
 import useFCMToken from './useFCMToken';
-import { ToastInfoStore } from '@/store/components/ToastInfo';
+import { ToastInfoStore } from '@/store/ToastInfo';
 
 const useFCM = () => {
   const fcmToken = useFCMToken();

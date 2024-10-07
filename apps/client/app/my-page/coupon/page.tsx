@@ -1,6 +1,6 @@
 'use client';
 
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import axiosInstance from '@/utils/axiosInstance';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
 import { useMutation } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ const addPoint = (point: number) => {
 };
 
 export default function Coupon() {
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const [isCouponUsed, setIsCouponUsed] = useState(false);
   const [isCouponNumberValidFail, setIsCouponNumberValidFail] = useState(false);

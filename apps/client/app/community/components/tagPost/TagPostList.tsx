@@ -1,60 +1,52 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import Loading from '@/app/loading';
 import axiosInstance from '@/utils/axiosInstance';
-import useDebounce from '@/utils/hooks/useDebounce';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import EmptyTagPostListItem from './EmptyTagPostListItem';
 import TagPostListItem from './TagPostListItem';
 import { PostInfo } from '@/types/post';
-import { communityPostInfos } from '@/data/mock/communityPostInfos';
+import { useEffect } from 'react';
+
+// 회원의 구독한 태그 목록 정보 조회 API
+const fetchTagPostInfos = ({ queryKey }: any) => {
+  const searchQuery = queryKey[1];
+  return axiosInstance.get(
+    `/public/community/posts?tag=${searchQuery}&limit=10`
+  );
+};
 
 interface TagPostListProps {
   searchQuery: string;
 }
 
-// 시험 목록 반환 API (10개 게시글 단위로)
-// const fetchExams = async ({ queryKey }: any) => {
-//   const page = queryKey[1];
-//   const searchQuery = queryKey[2];
-//   const response = await axiosInstance.get(
-//     `${process.env.NEXT_PUBLIC_API_VERSION}/assignment/?page=${page}&limit=10&sort=-createdAt&q=title,course,writer=${searchQuery}`
-//   );
-//   return response.data;
-// };
-
 export default function TagPostList({ searchQuery }: TagPostListProps) {
-  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const { isPending, isError, data, error } = useQuery({
+    queryKey: ['tagPostInfos', searchQuery],
+    queryFn: fetchTagPostInfos,
+    retry: 0,
+  });
 
-  const params = useSearchParams();
+  const tagPostInfos: PostInfo[] = data?.data.response;
 
-  const page = Number(params?.get('page')) || 1;
-
-  // const { isPending, data } = useQuery({
-  //   queryKey: ['examList', page, debouncedSearchQuery],
-  //   queryFn: fetchExams,
-  // });
-
-  const router = useRouter();
-
-  // const resData = data?.data;
-  const resData = communityPostInfos;
-
-  // if (isPending) return <Loading />;
+  if (isPending) return <Loading />;
 
   return (
     <div className='mt-3 flex flex-col gap-y-3'>
-      {resData?.length === 0 && <EmptyTagPostListItem />}
-      {resData?.map((hotPostInfo: PostInfo, index: number) => (
-        <TagPostListItem
-          postInfo={hotPostInfo}
-          key={index}
-          index={index}
-          length={resData.length}
-        />
-      ))}
+      {tagPostInfos?.length === 0 ? (
+        <EmptyTagPostListItem />
+      ) : (
+        <>
+          {tagPostInfos?.map((hotPostInfo: PostInfo, index: number) => (
+            <TagPostListItem
+              postInfo={hotPostInfo}
+              key={index}
+              index={index}
+              length={tagPostInfos.length}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }

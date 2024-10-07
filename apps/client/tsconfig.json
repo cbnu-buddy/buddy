@@ -29,8 +29,7 @@
     "third-party/firebase-messaging-sw.ㅓㄴ",
     "utils/upload/uploadService.ts",
     "utils/upload/uploadService.ts",
-    "app/components/CustomCKEditor.jsx",
-    "utils/upload/uploadAdapter.ts"
+    "app/components/CustomCKEditor.jsx"
   ],
   "exclude": ["node_modules"]
 }

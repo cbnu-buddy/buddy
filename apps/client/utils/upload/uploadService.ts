@@ -6,7 +6,7 @@ export class UploadService {
     formData.append('file', file);
 
     const response = await axiosInstance.post<string>(
-      '/private/upload',
+      '/private/community/upload',
       formData,
       {
         headers: {

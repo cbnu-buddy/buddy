@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import axiosInstance from '@/utils/axiosInstance';
 import SettlementPreviewModal from './components/SettlementPreviewModal';
 import { loadTossPayments } from '@tosspayments/payment-sdk';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import { useQuery } from '@tanstack/react-query';
 import { partySelectedPlanInfos } from '@/data/partySelectedPlanInfos';
 import questionMarkImg from '@/public/images/question_mark.png';
@@ -54,7 +54,7 @@ const calculateDaysUntil = (dateString: string) => {
 };
 
 export default function MyParty() {
-  const userInfo = userInfoStore((state: any) => state.userInfo);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
 
   const { isPending, data } = useQuery({
     queryKey: ['myPartyInfo'],

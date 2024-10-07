@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import Image from 'next/image';
 import logoImg from '@/public/images/logo.png';
 import axiosInstance from '@/utils/axiosInstance';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 import { AxiosError } from 'axios';
 import Link from 'next/link';
 import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
@@ -29,7 +29,7 @@ const login = (userAccountInfo: UserLoginInfoType) => {
 };
 
 export default function Login() {
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const loginMutation = useMutation({
     mutationFn: login,

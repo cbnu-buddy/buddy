@@ -1,60 +1,63 @@
 'use client';
 
-import React, { useEffect } from 'react';
 import Loading from '@/app/loading';
 import axiosInstance from '@/utils/axiosInstance';
-import useDebounce from '@/utils/hooks/useDebounce';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import EmptyFeedPostListItem from './EmptyFeedPostListItem';
 import FeedPostListItem from './FeedPostListItem';
 import { PostInfo } from '@/types/post';
-import { Divider } from 'rsuite';
-import { communityPostInfos } from '@/data/mock/communityPostInfos';
+import { useEffect } from 'react';
 
-// interface FeedPostListProps {
-//   searchQuery: string;
-// }
+// 커뮤니티 최신 게시글 목록 정보 조회 API
+const fetchHotPostInfos = () => {
+  return axiosInstance.get(`/public/community/posts/latest?limit=${10}`);
+};
 
-// 시험 목록 반환 API (10개 게시글 단위로)
-// const fetchExams = async ({ queryKey }: any) => {
-//   const page = queryKey[1];
-//   const searchQuery = queryKey[2];
-//   const response = await axiosInstance.get(
-//     `${process.env.NEXT_PUBLIC_API_VERSION}/assignment/?page=${page}&limit=10&sort=-createdAt&q=title,course,writer=${searchQuery}`
-//   );
-//   return response.data;
-// };
+// 커뮤니티 태그 검색 게시글 목록 정보 조회 API
+const fetchTagPostInfos = (searchQuery: string) => {
+  return axiosInstance.get(
+    `/public/community/posts?tag=${searchQuery}&limit=${10}`
+  );
+};
 
-export default function FeedPostList() {
-  const params = useSearchParams();
+interface FeedPostListProps {
+  searchQuery: string;
+  setSearchedPostNum: React.Dispatch<React.SetStateAction<number>>;
+}
 
-  const page = Number(params?.get('page')) || 1;
+export default function FeedPostList(props: FeedPostListProps) {
+  const { searchQuery, setSearchedPostNum } = props;
 
-  // const { isPending, data } = useQuery({
-  //   queryKey: ['examList', page, debouncedSearchQuery],
-  //   queryFn: fetchExams,
-  // });
+  const { isPending, data } = useQuery({
+    queryKey: ['postInfos', searchQuery],
+    queryFn: () =>
+      searchQuery ? fetchTagPostInfos(searchQuery) : fetchHotPostInfos(),
+  });
 
-  const router = useRouter();
+  const communityPostInfos: PostInfo[] = data?.data.response;
 
-  // const resData = data?.data;
-  const resData = communityPostInfos;
+  console.log(communityPostInfos);
 
-  // if (isPending) return <Loading />;
+  useEffect(() => {
+    if (communityPostInfos) {
+      setSearchedPostNum(communityPostInfos.length);
+    }
+  }, [communityPostInfos, setSearchedPostNum]);
+
+  if (isPending) return <Loading />;
 
   return (
     <div className='mt-2'>
-      {resData?.length === 0 ? (
+      {communityPostInfos?.length === 0 ? (
         <EmptyFeedPostListItem />
       ) : (
         <div className='flex flex-col gap-y-3'>
-          {resData?.map((hotPostInfo: PostInfo, index: number) => (
+          {communityPostInfos?.map((hotPostInfo: PostInfo, index: number) => (
             <FeedPostListItem
               postInfo={hotPostInfo}
               key={index}
               index={index}
-              length={resData.length}
+              length={communityPostInfos.length}
             />
           ))}
         </div>

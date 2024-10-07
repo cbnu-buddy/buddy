@@ -1,32 +1,255 @@
 'use client';
 
-import { Toast } from 'flowbite-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import FeedPostList from './components/feedPost/FeedPostList';
 import Link from 'next/link';
-import { tagSubscribedInfo } from '@/data/mock/tagInfos';
+import { ToastInfoStore } from '@/store/ToastInfo';
+import axiosInstance from '@/utils/axiosInstance';
+import { MySubscribedTagInfo } from '@/types/tag';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+import { UserInfoStore } from '@/store/UserInfo';
+
+// 회원의 구독한 태그 목록 정보 조회 API
+const fetchMySubscribedTagInfos = () => {
+  return axiosInstance.get(`/private/subscribe/my/subscribed-tags`);
+};
+
+// 태그 구독하기 API
+const subscribeTag = (tagId: number) => {
+  return axiosInstance.post(`/private/subscribe/tags/${tagId}`);
+};
+
+// 태그 구독 취소하기 API
+const unsubscribeTag = (tagId: number) => {
+  return axiosInstance.delete(`/private/subscribe/tags/${tagId}`);
+};
+
+// 태그 새 글 알림 활성화 API
+const enableReceiveNotification = (tagId: number) => {
+  return axiosInstance.post(`/private/subscribe/tags/${tagId}/notification`);
+};
+
+// 태그 새 글 알림 비활성화 API
+const disableReceiveNotification = (tagId: number) => {
+  return axiosInstance.delete(`/private/subscribe/tags/${tagId}/notification`);
+};
 
 export default function Feed() {
-  const [resData, setResData] = useState(tagSubscribedInfo);
+  const queryClient = useQueryClient();
 
-  const [isToastClosing, setIsToastClosing] = useState(false);
-  const [isOpenCopyLinkCompleteToast, setIsOpenCopyLinkCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenSubscribeCompleteToast, setIsOpenSubscribeCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenUnSubscribeCompleteToast, setIsOpenUnSubscribeCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenBottomDrawer, setIsOpenBottomDrawer] = useState<boolean>(false);
-  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
-    useState<boolean>(false);
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
+
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
+
+  const { isPending, isError, data, error } = useQuery({
+    queryKey: ['subscribedTagInfo'],
+    queryFn: fetchMySubscribedTagInfos,
+    retry: 0,
+  });
+
+  const subscribeTagMutation = useMutation({
+    mutationFn: subscribeTag,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ['subscribedTagInfo'],
+          });
+          updateToastMessage(`"${tagQuery}" 구독이 완료되었습니다`);
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const unsubscribeTagMutation = useMutation({
+    mutationFn: unsubscribeTag,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          updateToastMessage(`"${tagQuery}" 구독이 취소되었습니다`);
+          updateOpenToastStatus(true);
+          closeDrawer();
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const enableReceiveNotificationMutation = useMutation({
+    mutationFn: enableReceiveNotification,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 알림이 활성화되어 있어요');
+              handleButtonInBottomDrawaberClick();
+              break;
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          queryClient.invalidateQueries({
+            queryKey: ['subscribedTagInfo'],
+          });
+          handleButtonInBottomDrawaberClick();
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const disableReceiveNotificationMutation = useMutation({
+    mutationFn: disableReceiveNotification,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 알림이 비활성화되어 있어요');
+              handleButtonInBottomDrawaberClick();
+              break;
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          queryClient.invalidateQueries({
+            queryKey: ['subscribedTagInfo'],
+          });
+          handleButtonInBottomDrawaberClick();
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const [subscribedTagInfo, setSubscribedTagInfo] =
+    useState<MySubscribedTagInfo>({
+      tagId: 0,
+      tagName: '',
+      isReceiveNotification: false,
+      isSubscribed: false,
+    });
+
+  // 현재 검색 중인 태그 쿼리 가져오기
+  const [tagQuery, setTagQuery] = useState<string>('');
 
   const router = useRouter();
   const params = useSearchParams();
 
-  const tagQuery: string = params?.get('tag') || '';
-
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const query = params?.get('tag') || '';
+    setTagQuery(query);
+  }, [params]);
+
+  useEffect(() => {
+    if (data && tagQuery) {
+      const resData = data?.data.response;
+      const matchingTagInfo = resData.find(
+        (item: MySubscribedTagInfo) => item.tagName === tagQuery
+      );
+      if (matchingTagInfo) {
+        setSubscribedTagInfo({
+          ...matchingTagInfo,
+          isSubscribed: true,
+        });
+      }
+    }
+  }, [data, tagQuery]);
+
+  const [selectedTagInfo, setSelectedTagInfo] = useState<{
+    tagId: number;
+    tagName: string;
+    isReceiveNotification: boolean;
+  }>({
+    tagId: 0,
+    tagName: '',
+    isReceiveNotification: false,
+  });
+
+  const [isOpenBottomDrawer, setIsOpenBottomDrawer] = useState<boolean>(false);
+  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
+    useState<boolean>(false);
+
+  const [searchedPostNum, setSearchedPostNum] = useState<number>(0);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,71 +296,12 @@ export default function Feed() {
     }, 250);
   };
 
-  useEffect(() => {
-    if (isOpenCopyLinkCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenCopyLinkCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenCopyLinkCompleteToast]);
-
-  useEffect(() => {
-    if (isOpenSubscribeCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenSubscribeCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenSubscribeCompleteToast]);
-
-  useEffect(() => {
-    if (isOpenUnSubscribeCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenUnSubscribeCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenUnSubscribeCompleteToast]);
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard
       .writeText(text)
       .then(() => {
-        setIsOpenCopyLinkCompleteToast(false);
-        setIsOpenSubscribeCompleteToast(false);
-        setIsOpenUnSubscribeCompleteToast(false);
-
-        setTimeout(() => {
-          setIsOpenCopyLinkCompleteToast(true);
-        }, 50);
+        updateToastMessage(`링크가 복사됐어요`);
+        updateOpenToastStatus(true);
       })
       .catch(() => {
         alert('복사에 실패했습니다.');
@@ -165,16 +329,6 @@ export default function Feed() {
 
           <button
             onClick={() => {
-              setIsOpenCopyLinkCompleteToast(false);
-              setIsOpenSubscribeCompleteToast(false);
-              setIsOpenUnSubscribeCompleteToast(false);
-
-              setTimeout(() => {
-                setIsOpenCopyLinkCompleteToast(true);
-              }, 50);
-
-              setTimeout(() => {});
-
               copyToClipboard(window.location.href);
             }}
             className='flex items-center gap-x-[0.375rem] hover:bg-[#dbe0e5] rounded-lg px-3 py-2'
@@ -196,142 +350,104 @@ export default function Feed() {
       </div>
 
       <div className='w-full flex flex-col gap-y-4 justify-center items-center'>
-        <h1 className='flex items-center gap-x-1 mx-auto font-semibold text-base text-[#333d4b]'>
-          <div
-            className='flex justify-center items-center p-1 rounded-full'
-            style={{ background: 'rgba(2, 32, 71, 0.05' }}
-          >
-            <svg
-              width='24'
-              height='24'
-              fill='none'
-              xmlns='http://www.w3.org/2000/svg'
-              viewBox='0 0 24 24'
-              data-v-9b82dcfc=''
-            >
-              <path
-                fillRule='evenodd'
-                clipRule='evenodd'
-                d='M10.216 5.015a1 1 0 00-1.159.812L8.69 7.909H7a1 1 0 100 2h1.337l-.705 4H6a1 1 0 100 2h1.28l-.307 1.735a1 1 0 001.97.348l.367-2.083h3.969l-.306 1.735a1 1 0 101.97.348l.367-2.083H17a1 1 0 100-2h-1.338l.705-4h1.634a1 1 0 100-2h-1.28l.305-1.735a1 1 0 10-1.97-.347l-.367 2.082h-3.968l.306-1.735a1 1 0 00-.811-1.159zm3.415 8.894l.706-4h-3.969l-.705 4h3.968z'
-                fill='#3a8af9'
-                data-v-9b82dcfc=''
-              ></path>
-            </svg>
-          </div>
-          <span className='text-xl font-semibold'>{tagQuery}</span>
-        </h1>
-
-        {(isOpenCopyLinkCompleteToast ||
-          isOpenSubscribeCompleteToast ||
-          isOpenUnSubscribeCompleteToast) && (
-          <Toast
-            className={`w-fit fixed bottom-14 left-14 bg-[#222222] py-3 pr-5 ${
-              isToastClosing ? 'toast-fade-out' : 'toast-fade-in'
-            }`}
-          >
-            <div className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-green-500 dark:bg-green-800 dark:text-green-200'>
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                height='27.5px'
-                viewBox='0 -960 960 960'
-                width='27.5px'
-                fill='#75d5ad'
+        {tagQuery && (
+          <>
+            <h1 className='flex items-center gap-x-1 mx-auto font-semibold text-base text-[#333d4b]'>
+              <div
+                className='flex justify-center items-center p-1 rounded-full'
+                style={{ background: 'rgba(2, 32, 71, 0.05' }}
               >
-                <path d='m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z' />
-              </svg>
-            </div>
-            <div className='ml-1 text-[0.825rem] font-medium text-white'>
-              {isOpenCopyLinkCompleteToast ? (
-                <>링크가 복사됐어요</>
-              ) : isOpenSubscribeCompleteToast ? (
-                <>&quot;{resData.tag}&quot; 구독이 완료되었습니다</>
+                <svg
+                  width='24'
+                  height='24'
+                  fill='none'
+                  xmlns='http://www.w3.org/2000/svg'
+                  viewBox='0 0 24 24'
+                  data-v-9b82dcfc=''
+                >
+                  <path
+                    fillRule='evenodd'
+                    clipRule='evenodd'
+                    d='M10.216 5.015a1 1 0 00-1.159.812L8.69 7.909H7a1 1 0 100 2h1.337l-.705 4H6a1 1 0 100 2h1.28l-.307 1.735a1 1 0 001.97.348l.367-2.083h3.969l-.306 1.735a1 1 0 101.97.348l.367-2.083H17a1 1 0 100-2h-1.338l.705-4h1.634a1 1 0 100-2h-1.28l.305-1.735a1 1 0 10-1.97-.347l-.367 2.082h-3.968l.306-1.735a1 1 0 00-.811-1.159zm3.415 8.894l.706-4h-3.969l-.705 4h3.968z'
+                    fill='#3a8af9'
+                    data-v-9b82dcfc=''
+                  ></path>
+                </svg>
+              </div>
+              <span className='text-xl font-semibold'>{tagQuery}</span>
+            </h1>
+
+            <div>
+              {subscribedTagInfo.isSubscribed ? (
+                <button
+                  onClick={() => {
+                    setIsOpenBottomDrawer(true);
+                  }}
+                  className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full border border-[#3a8af9]'
+                >
+                  {subscribedTagInfo.isReceiveNotification ? (
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='17.5'
+                      viewBox='0 -960 960 960'
+                      width='17.5'
+                      fill='#3a8af9'
+                      className='absolute left-[0.6rem]'
+                    >
+                      <path d='M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z' />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      height='17.5'
+                      viewBox='0 -960 960 960'
+                      width='17.5'
+                      fill='#3a8af9'
+                      className='absolute left-[0.6rem]'
+                    >
+                      <path d='M646-200H200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-33 8.5-65t25.5-61l126 126H288L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11.5 27.5T820-84q-11 11-28 11t-28-11L646-200Zm74-251q0 12-7 22t-18 15q-11 5-23 2.5T652-422L367-707q-7-7-10-15t-3-17q0-11 5.5-21.5T375-776q11-5 22-9t23-7v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 85t50 147v109ZM480-80q-30 0-53.5-16.5T403-141q0-8 6.5-13.5T424-160h112q8 0 14.5 5.5T557-141q0 28-23.5 44.5T480-80Z' />
+                    </svg>
+                  )}
+
+                  <span className='text-[0.8rem] font-medium text-[#3a8af9]'>
+                    구독중
+                  </span>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='25'
+                    viewBox='0 -960 960 960'
+                    width='25'
+                    fill='#3a8af9'
+                    className='absolute right-[0.375rem]'
+                  >
+                    <path d='M480-372.92q-7.23 0-13.46-2.31t-11.85-7.92L274.92-562.92q-8.3-8.31-8.5-20.89-.19-12.57 8.5-21.27 8.7-8.69 21.08-8.69 12.38 0 21.08 8.69L480-442.15l162.92-162.93q8.31-8.3 20.89-8.5 12.57-.19 21.27 8.5 8.69 8.7 8.69 21.08 0 12.38-8.69 21.08L505.31-383.15q-5.62 5.61-11.85 7.92-6.23 2.31-13.46 2.31Z' />
+                  </svg>
+                </button>
               ) : (
-                <>&quot;{resData.tag}&quot; 구독이 취소되었습니다</>
+                <button
+                  onClick={() => {
+                    subscribeTagMutation.mutate(subscribedTagInfo.tagId);
+                  }}
+                  className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full bg-[#3a8af9] border border-[#3a8af9]'
+                >
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    height='17.5'
+                    viewBox='0 -960 960 960'
+                    width='17.5'
+                    fill='white'
+                    className='absolute left-[0.6rem]'
+                  >
+                    <path d='M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z' />
+                  </svg>
+                  <span className='ml-3 text-[0.8rem] font-medium text-white whitespace-nowrap'>
+                    구독하기
+                  </span>
+                </button>
               )}
             </div>
-          </Toast>
+          </>
         )}
-
-        <div>
-          {resData.isSubscribed ? (
-            <button
-              onClick={() => {
-                setIsOpenBottomDrawer(true);
-              }}
-              className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full border border-[#3a8af9]'
-            >
-              {resData.isReceiveNotification ? (
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  height='17.5'
-                  viewBox='0 -960 960 960'
-                  width='17.5'
-                  fill='#3a8af9'
-                  className='absolute left-[0.6rem]'
-                >
-                  <path d='M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z' />
-                </svg>
-              ) : (
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  height='17.5'
-                  viewBox='0 -960 960 960'
-                  width='17.5'
-                  fill='#3a8af9'
-                  className='absolute left-[0.6rem]'
-                >
-                  <path d='M646-200H200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-33 8.5-65t25.5-61l126 126H288L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11.5 27.5T820-84q-11 11-28 11t-28-11L646-200Zm74-251q0 12-7 22t-18 15q-11 5-23 2.5T652-422L367-707q-7-7-10-15t-3-17q0-11 5.5-21.5T375-776q11-5 22-9t23-7v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 85t50 147v109ZM480-80q-30 0-53.5-16.5T403-141q0-8 6.5-13.5T424-160h112q8 0 14.5 5.5T557-141q0 28-23.5 44.5T480-80Z' />
-                </svg>
-              )}
-
-              <span className='text-[0.8rem] font-medium text-[#3a8af9]'>
-                구독중
-              </span>
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                height='25'
-                viewBox='0 -960 960 960'
-                width='25'
-                fill='#3a8af9'
-                className='absolute right-[0.375rem]'
-              >
-                <path d='M480-372.92q-7.23 0-13.46-2.31t-11.85-7.92L274.92-562.92q-8.3-8.31-8.5-20.89-.19-12.57 8.5-21.27 8.7-8.69 21.08-8.69 12.38 0 21.08 8.69L480-442.15l162.92-162.93q8.31-8.3 20.89-8.5 12.57-.19 21.27 8.5 8.69 8.7 8.69 21.08 0 12.38-8.69 21.08L505.31-383.15q-5.62 5.61-11.85 7.92-6.23 2.31-13.46 2.31Z' />
-              </svg>
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setIsOpenCopyLinkCompleteToast(false);
-                setIsOpenSubscribeCompleteToast(false);
-                setIsOpenUnSubscribeCompleteToast(false);
-
-                setTimeout(() => {
-                  setIsOpenSubscribeCompleteToast(true);
-                }, 50);
-
-                setResData((prevData) => ({
-                  ...prevData,
-                  isSubscribed: true,
-                }));
-              }}
-              className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full bg-[#3a8af9] border border-[#3a8af9]'
-            >
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                height='17.5'
-                viewBox='0 -960 960 960'
-                width='17.5'
-                fill='white'
-                className='absolute left-[0.6rem]'
-              >
-                <path d='M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z' />
-              </svg>
-              <span className='ml-3 text-[0.8rem] font-medium text-white whitespace-nowrap'>
-                구독하기
-              </span>
-            </button>
-          )}
-        </div>
 
         {(isOpenBottomDrawer || isBottomDrawerClosing) && (
           <div
@@ -378,10 +494,14 @@ export default function Feed() {
                 <div className='flex flex-col items-start gap-y-1 pb-4 border-b'>
                   <button
                     onClick={() => {
-                      setResData((prevData) => ({
+                      setSubscribedTagInfo((prevData) => ({
                         ...prevData,
                         isReceiveNotification: true,
                       }));
+
+                      enableReceiveNotificationMutation.mutate(
+                        subscribedTagInfo.tagId
+                      );
 
                       handleButtonInBottomDrawaberClick();
                     }}
@@ -393,20 +513,22 @@ export default function Feed() {
                       viewBox='0 -960 960 960'
                       width='20'
                       fill={`${
-                        resData.isReceiveNotification ? '#5f646b' : '#a0a5ac'
+                        subscribedTagInfo.isReceiveNotification
+                          ? '#5f646b'
+                          : '#a0a5ac'
                       }`}
                     >
                       <path d='M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z' />
                     </svg>
                     <span
                       className={`relative flex items-center text-[0.825rem] ${
-                        !resData.isReceiveNotification
+                        !subscribedTagInfo.isReceiveNotification
                           ? 'font-bold'
                           : 'font-medium'
                       }`}
                     >
                       새 글 알림 받기
-                      {resData.isReceiveNotification && (
+                      {subscribedTagInfo.isReceiveNotification && (
                         <svg
                           xmlns='http://www.w3.org/2000/svg'
                           height='24px'
@@ -423,10 +545,14 @@ export default function Feed() {
 
                   <button
                     onClick={() => {
-                      setResData((prevData) => ({
+                      setSubscribedTagInfo((prevData) => ({
                         ...prevData,
                         isReceiveNotification: false,
                       }));
+
+                      disableReceiveNotificationMutation.mutate(
+                        subscribedTagInfo.tagId
+                      );
 
                       handleButtonInBottomDrawaberClick();
                     }}
@@ -438,20 +564,22 @@ export default function Feed() {
                       viewBox='0 -960 960 960'
                       width='20'
                       fill={`${
-                        !resData.isReceiveNotification ? '#5f646b' : '#a0a5ac'
+                        !subscribedTagInfo.isReceiveNotification
+                          ? '#5f646b'
+                          : '#a0a5ac'
                       }`}
                     >
                       <path d='M646-200H200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-33 8.5-65t25.5-61l126 126H288L84-764q-11-11-11-28t11-28q11-11 28-11t28 11l680 680q11 11 11.5 27.5T820-84q-11 11-28 11t-28-11L646-200Zm74-251q0 12-7 22t-18 15q-11 5-23 2.5T652-422L367-707q-7-7-10-15t-3-17q0-11 5.5-21.5T375-776q11-5 22-9t23-7v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 85t50 147v109ZM480-80q-30 0-53.5-16.5T403-141q0-8 6.5-13.5T424-160h112q8 0 14.5 5.5T557-141q0 28-23.5 44.5T480-80Z' />
                     </svg>
                     <span
                       className={`relative flex items-center text-[0.825rem] ${
-                        !resData.isReceiveNotification
+                        !subscribedTagInfo.isReceiveNotification
                           ? 'font-bold'
                           : 'font-medium'
                       }`}
                     >
                       새 글 알림 끄기
-                      {!resData.isReceiveNotification && (
+                      {!subscribedTagInfo.isReceiveNotification && (
                         <svg
                           xmlns='http://www.w3.org/2000/svg'
                           height='24px'
@@ -470,18 +598,17 @@ export default function Feed() {
                 <div>
                   <button
                     onClick={(e) => {
-                      setIsOpenCopyLinkCompleteToast(false);
-                      setIsOpenSubscribeCompleteToast(false);
-                      setIsOpenUnSubscribeCompleteToast(false);
+                      updateToastMessage(
+                        `"${subscribedTagInfo.tagName}" 구독이 취소되었습니다`
+                      );
+                      updateOpenToastStatus(true);
 
-                      setTimeout(() => {
-                        setIsOpenUnSubscribeCompleteToast(true);
-                      }, 50);
-
-                      setResData((prevData) => ({
+                      setSubscribedTagInfo((prevData) => ({
                         ...prevData,
                         isSubscribed: false,
                       }));
+
+                      unsubscribeTagMutation.mutate(subscribedTagInfo.tagId);
 
                       closeDrawer();
                     }}
@@ -501,9 +628,12 @@ export default function Feed() {
         <div className='w-full'>
           <div className='w-full flex flex-col gap-y-1'>
             <p className='font-semibold text-[0.825rem] text-[#8b95a1]'>
-              총 {33}개
+              총 {searchedPostNum}개
             </p>
-            <FeedPostList />
+            <FeedPostList
+              searchQuery={tagQuery}
+              setSearchedPostNum={setSearchedPostNum}
+            />
           </div>
         </div>
 

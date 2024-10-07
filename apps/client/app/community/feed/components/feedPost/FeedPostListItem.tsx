@@ -25,15 +25,21 @@ export default function FeedPostListItem(props: FeedPostListItemProps) {
         <div className='w-full flex flex-col justify-start gap-y-2'>
           <div className='flex justify-between items-center'>
             <div className='flex items-center gap-x-[0.375rem]'>
-              <div className='relative w-[30px] h-[30px]'>
-                <Image
-                  src='https://avatars.githubusercontent.com/u/119295431?v=4'
-                  alt='profileImage'
-                  fill
-                  quality={100}
-                  className='rounded-full'
-                />
-              </div>
+              {postInfo.author.profileImagePathUrl ? (
+                <div className='relative w-[30px] h-[30px]'>
+                  <Image
+                    src={postInfo.author.profileImagePathUrl}
+                    alt='profileImage'
+                    fill
+                    quality={100}
+                    className='rounded-full'
+                  />
+                </div>
+              ) : (
+                <span className='w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full'>
+                  {postInfo.author.username.charAt(0)}
+                </span>
+              )}
               <span className='text-xs text-[#4e5968]'>
                 {postInfo.author.username}
               </span>
@@ -46,13 +52,11 @@ export default function FeedPostListItem(props: FeedPostListItemProps) {
 
           <p className='mt-1 text-[#333d4b] font-semibold'>{postInfo.title}</p>
 
-          <p className='text-[0.8rem]'>{postInfo.content}</p>
-
           {postInfo.postImagePathUrls.length !== 0 && (
             <div className='flex flex-col justify-between my-1'>
               <div className='relative h-[250px]'>
                 <Image
-                  src={test2Img}
+                  src={postInfo.postImagePathUrls[0]}
                   alt='main_1Image'
                   fill
                   quality={100}

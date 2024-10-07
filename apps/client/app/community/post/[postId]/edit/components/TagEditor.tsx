@@ -268,14 +268,14 @@ export default function TagEditor(props: TagEditorProps) {
               <button
                 key={index}
                 onClick={() => {
-                  if (!tagList.includes(tagInfo.tag)) {
-                    setTagList([...tagList, tagInfo.tag]);
+                  if (!tagList.includes(tagInfo.tagName)) {
+                    setTagList([...tagList, tagInfo.tagName]);
                   }
                   setTagName('');
                 }}
                 className='w-full text-start hover:bg-[#f8f8f8] pl-3 pr-1 py-[0.375rem] search-result-item outline-none focus:text-[#3a8af9]'
               >
-                {tagInfo.tag}
+                {tagInfo.tagName}
               </button>
             ))}
           </div>

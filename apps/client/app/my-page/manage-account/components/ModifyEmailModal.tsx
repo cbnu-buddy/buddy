@@ -6,7 +6,7 @@ import axiosInstance from '@/utils/axiosInstance';
 import { AxiosError } from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { fetchCurrentUserInfo } from '@/utils/fetchCurrentUserInfo';
-import { userInfoStore } from '@/store/UserInfo';
+import { UserInfoStore } from '@/store/UserInfo';
 
 interface ModifyEmailModalProps {
   openModifyEmailModal: string | undefined;
@@ -27,7 +27,7 @@ export default function ModifyEmailModal({
   openModifyEmailModal,
   setOpenModifyEmailModal,
 }: ModifyEmailModalProps) {
-  const updateUserInfo = userInfoStore((state: any) => state.updateUserInfo);
+  const updateUserInfo = UserInfoStore((state: any) => state.updateUserInfo);
 
   const modifyEmailMutation = useMutation({
     mutationFn: modifyEmail,
