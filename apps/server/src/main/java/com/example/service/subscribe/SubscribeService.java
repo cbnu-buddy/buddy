@@ -63,7 +63,27 @@ public class SubscribeService {
         return ApiResult.success("태그 구독이 성공적으로 처리되었습니다.");
     }
 
-    /*
+    @Transactional
+    public ApiResult<?> subscribeTagByName(HttpServletRequest request, String tagName) {
+        String userId = getUserIdFromToken(request);
+        Member member = memberRepository.findByUserId(userId)
+          .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Tag tag = tagRepository.findByTagName(tagName)
+          .orElseThrow(() -> new CustomException(ErrorCode.TAG_NOT_FOUND));
+
+        if (tagSubRepository.findByMember_MemberIdAndTag_Id(member.getMemberId(), tag.getId()).isPresent()) {
+            throw new CustomException(ErrorCode.ALREADY_SUBSCRIBED);
+        }
+
+        TagSub tagSub = new TagSub(member, tag);
+        tagSubRepository.save(tagSub);
+
+        return ApiResult.success("태그 구독이 성공적으로 처리되었습니다.");
+  }
+
+
+  /*
     태그 구독 취소하기
     */
     @Transactional
