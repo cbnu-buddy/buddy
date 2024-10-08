@@ -27,9 +27,9 @@ public class SubscribeController {
     }
 
     @Operation(summary = "태그 구독하기2", description = "태그 이름을 기반으로 태그를 구독합니다.")
-    @PostMapping("/tag")
-    public ApiResult<?> subscribeTagByName(HttpServletRequest request, @RequestParam String tagName) {
-        return subscribeService.subscribeTagByName(request, tagName);
+    @PostMapping
+    public ApiResult<?> subscribeTagByName(HttpServletRequest request, @RequestParam String tag) {
+        return subscribeService.subscribeTagByName(request, tag);
     }
 
     @Operation(summary = "태그 구독 취소하기", description = "")
