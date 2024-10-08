@@ -70,7 +70,12 @@ public class SubscribeService {
           .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         Tag tag = tagRepository.findByTagName(tagName)
-          .orElseThrow(() -> new CustomException(ErrorCode.TAG_NOT_FOUND));
+          .orElseGet(() -> {
+            // 새로운 태그 생성
+            Tag newTag = new Tag();
+            newTag.setTagName(tagName);
+            return tagRepository.save(newTag); // 태그 저장
+          });
 
         if (tagSubRepository.findByMember_MemberIdAndTag_Id(member.getMemberId(), tag.getId()).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_SUBSCRIBED);
