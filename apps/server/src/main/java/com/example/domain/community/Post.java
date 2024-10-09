@@ -26,6 +26,7 @@ public class Post {
 
     private String title;
 
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "created_time")
