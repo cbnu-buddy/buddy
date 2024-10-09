@@ -1,6 +1,6 @@
 'use client';
 
-import { relatedSearchTagInfos } from '@/data/mock/tagInfos';
+import { TagInfo } from '@/types/tag';
 import axiosInstance from '@/utils/axiosInstance';
 import useDebounce from '@/utils/hooks/useDebounce';
 import { useQuery } from '@tanstack/react-query';
@@ -22,14 +22,6 @@ interface TagEditorProps {
 export default function TagEditor(props: TagEditorProps) {
   const { tagList, setTagList } = props;
 
-  const { isPending, isError, data, error } = useQuery({
-    queryKey: ['relatedSearchTagInfos'],
-    queryFn: fetchRelatedSearchTagInfos,
-    retry: 0,
-  });
-
-  const resData = relatedSearchTagInfos;
-
   const [tagName, setTagName] = useState('');
   const [selectedTagIndex, setSelectedTagIndex] = useState<number | null>(null);
   const [isOpenSearchedResultList, setIsOpenSearchedResultList] =
@@ -42,6 +34,15 @@ export default function TagEditor(props: TagEditorProps) {
 
   const debouncedSearchQuery = useDebounce(tagName, 400);
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['relatedSearchTagInfos', debouncedSearchQuery],
+    queryFn: fetchRelatedSearchTagInfos,
+    enabled: !!debouncedSearchQuery,
+    retry: 0,
+  });
+
+  const relatedSearchTagInfos: TagInfo[] = data?.data.response;
+
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isComposing) return; // IME 입력 중에는 실행하지 않음
 
@@ -53,9 +54,14 @@ export default function TagEditor(props: TagEditorProps) {
         return;
       }
 
-      if (!tagList.includes(tagName.trim())) {
+      // 중복 태그 체크를 소문자로 변환하여 수행
+      const normalizedTagName = tagName.trim().toLowerCase();
+      const normalizedTagList = tagList.map((tag) => tag.toLowerCase());
+
+      if (!normalizedTagList.includes(normalizedTagName)) {
         setTagList([...tagList, tagName.trim()]);
-        setTagName('');
+        setTagName(''); // 태그 추가 후 입력 필드를 비우고
+        setIsOpenSearchedResultList(false); // 바로 검색 결과 리스트를 닫음
       } else {
         alert('중복된 태그입니다.');
       }
@@ -164,75 +170,20 @@ export default function TagEditor(props: TagEditorProps) {
     }
   };
 
+  // tagName이 빈 문자열인 경우 검색 결과 리스트를 즉시 닫음
   useEffect(() => {
-    if (debouncedSearchQuery) {
+    if (tagName === '') {
+      setIsOpenSearchedResultList(false);
+    }
+  }, [tagName]);
+
+  useEffect(() => {
+    if (relatedSearchTagInfos && relatedSearchTagInfos.length > 0) {
       setIsOpenSearchedResultList(true);
     } else {
       setIsOpenSearchedResultList(false);
     }
-  }, [debouncedSearchQuery]);
-
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (
-      searchedResultListRef.current &&
-      !searchedResultListRef.current.contains(event.target as Node)
-    ) {
-      setIsOpenSearchedResultList(false);
-    }
-  }, []);
-
-  const handleEscKeyPress = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      setIsOpenSearchedResultList(false);
-    }
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (tagName !== debouncedSearchQuery) return;
-      if (!isOpenSearchedResultList || !resData.length) return;
-
-      const activeElement = document.activeElement;
-      const itemList = document.querySelectorAll('.search-result-item');
-      let currentIndex = Array.prototype.indexOf.call(itemList, activeElement);
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        const nextIndex = (currentIndex + 1) % itemList.length;
-        if (itemList[nextIndex]) {
-          (itemList[nextIndex] as HTMLElement).focus();
-        }
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        const prevIndex =
-          currentIndex > 0 ? currentIndex - 1 : itemList.length - 1;
-        if (itemList[prevIndex]) {
-          (itemList[prevIndex] as HTMLElement).focus();
-        }
-      }
-    },
-    [debouncedSearchQuery, tagName, resData, isOpenSearchedResultList]
-  );
-
-  useEffect(() => {
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('keydown', handleEscKeyPress);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleEscKeyPress);
-    };
-  }, [handleClickOutside, handleEscKeyPress]);
-
-  useEffect(() => {
-    if (isOpenSearchedResultList) {
-      document.addEventListener('keydown', handleKeyDown);
-    } else {
-      document.removeEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpenSearchedResultList, handleKeyDown]);
+  }, [relatedSearchTagInfos]);
 
   return (
     <div
@@ -253,8 +204,7 @@ export default function TagEditor(props: TagEditorProps) {
           }}
           onKeyDown={(e) => handleTagKeyDown(e, index)}
           className={`min-h-6 h-auto leading-none text-start outline-none px-[0.2rem] bg-[#eee] rounded-[0.125rem] border border-[#eee] hover:border-[#aaaaaa] focus:bg-[#656565] focus:text-white focus:border-[#656565] ${
-            selectedTagIndex === index &&
-            'bg-[#656565] text-white border-[#656565]'
+            selectedTagIndex === index && 'bg-[#656565] border-[#656565]'
           }`}
         >
           #<span className='ml-[0.1rem] text-inherit break-all'>{tag}</span>
@@ -275,27 +225,34 @@ export default function TagEditor(props: TagEditorProps) {
           } placeholder:text-[#88909a] font-light text-[0.825rem] focus:ring-0 text-[#1a1f27]`}
         />
 
-        {isOpenSearchedResultList && (
-          <div
-            ref={searchedResultListRef}
-            className='absolute top-[1.625rem] left-2 w-[7.5rem] max-h-[7.5rem] overflow-y-auto border border-[#d1d2d4] bg-white py-[0.4rem] z-10'
-          >
-            {resData.map((tagInfo, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  if (!tagList.includes(tagInfo.tagName)) {
-                    setTagList([...tagList, tagInfo.tagName]);
-                  }
-                  setTagName('');
-                }}
-                className='w-full text-start hover:bg-[#f8f8f8] pl-3 pr-1 py-[0.375rem] search-result-item outline-none focus:text-[#3a8af9]'
-              >
-                {tagInfo.tagName}
-              </button>
-            ))}
-          </div>
-        )}
+        {isOpenSearchedResultList &&
+          relatedSearchTagInfos &&
+          relatedSearchTagInfos.filter(
+            (tagInfo) => !tagList.includes(tagInfo.tagName)
+          ).length > 0 && (
+            <div
+              ref={searchedResultListRef}
+              className='absolute top-[1.625rem] left-2 w-[7.5rem] max-h-[7.5rem] overflow-y-auto border border-[#d1d2d4] bg-white py-[0.4rem] z-10'
+            >
+              {relatedSearchTagInfos
+                .filter((tagInfo) => !tagList.includes(tagInfo.tagName))
+                .map((tagInfo, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (!tagList.includes(tagInfo.tagName)) {
+                        setTagList([...tagList, tagInfo.tagName]);
+                      }
+                      setTagName('');
+                      setIsOpenSearchedResultList(false); // 태그가 추가되면 즉시 리스트 닫기
+                    }}
+                    className='w-full text-start hover:bg-[#f8f8f8] pl-3 pr-1 py-[0.375rem] search-result-item outline-none focus:text-[#3a8af9]'
+                  >
+                    {tagInfo.tagName}
+                  </button>
+                ))}
+            </div>
+          )}
       </div>
     </div>
   );
