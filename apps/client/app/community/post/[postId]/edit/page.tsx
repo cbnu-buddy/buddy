@@ -4,7 +4,6 @@ import Loading from '@/app/loading';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { useRef, useState, useEffect } from 'react';
-import TagEditor from './components/TagEditor';
 import LinkedServicesModal from './components/LinkedServicesModal';
 import { partySelectedPlanInfos } from '@/data/partySelectedPlanInfos';
 import Link from 'next/link';
@@ -16,6 +15,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import NotFound from '@/app/[...Not_found]/page';
 import { AxiosError } from 'axios';
 import { UploadFileStore } from '@/store/UploadFile';
+import TagEditor from '../../new/components/TagEditor';
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
@@ -130,7 +130,7 @@ export default function EditCommunityPost(props: DefaultProps) {
       removeFilePathUrlList();
       removeFilePathUrlList();
       if (postInfo.postImagePathUrls) {
-        updateFilePathUrlList(postInfo.postImagePathUrls);
+        updateFilePathUrlList(...postInfo.postImagePathUrls);
       }
     }
   }, [postInfo]);
@@ -218,7 +218,6 @@ export default function EditCommunityPost(props: DefaultProps) {
 
         <div className='w-full mx-auto overflow-auto'>
           <CustomCKEditor
-            key={content ? content : 'editor'}
             initEditorContent={content}
             onEditorChange={setContent}
           />
