@@ -17,8 +17,8 @@ const fetchMySubscribedTagInfos = () => {
 };
 
 // 태그 구독하기 API
-const subscribeTag = (tagId: number) => {
-  return axiosInstance.post(`/private/subscribe/tags/${tagId}`);
+const subscribeTag = (tagName: string) => {
+  return axiosInstance.post(`/private/subscribe?tag=${tagName}`);
 };
 
 // 태그 구독 취소하기 API
@@ -426,7 +426,7 @@ export default function Feed() {
               ) : (
                 <button
                   onClick={() => {
-                    subscribeTagMutation.mutate(subscribedTagInfo.tagId);
+                    subscribeTagMutation.mutate(tagQuery);
                   }}
                   className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full bg-[#3a8af9] border border-[#3a8af9]'
                 >
