@@ -2,24 +2,17 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Loading from '@/app/loading';
-import useDebounce from '@/utils/hooks/useDebounce';
-import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyRelatedSearchPostListItem from './EmptyRelatedSearchPostListItem';
 import RelatedSearchPostListItem from './RelatedSearchPostListItem';
 import { PostInfo } from '@/types/post';
-import { communityPostInfos } from '@/data/mock/communityPostInfos';
 
 interface RelatedSearchPostListProps {
-  searchQuery: string;
+  resData: PostInfo[];
 }
 
 export default function RelatedSearchPostList({
-  searchQuery,
+  resData,
 }: RelatedSearchPostListProps) {
-  const debouncedSearchQuery = useDebounce(searchQuery, 400);
-
-  const resData = communityPostInfos;
-
   const [page, setPage] = useState<number>(1);
   const [posts, setPosts] = useState<PostInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);

@@ -10,38 +10,285 @@ import SwiperBanner from './components/SwiperBanner';
 import SearchTagList from './components/searchedTag/SearchTagList';
 import useDebounce from '@/utils/hooks/useDebounce';
 import RelatedSearchPostList from './components/relatedSearchPost/RelatedSearchPostList';
-import { tagInfos, tagSubscribedInfo } from '@/data/mock/tagInfos';
-import { Toast } from 'flowbite-react';
+import { ToastInfoStore } from '@/store/ToastInfo';
+import {
+  MySubscribedTagInfo,
+  SearchRelatedIntegrationInfo,
+  TagInfo,
+} from '@/types/tag';
+import axiosInstance from '@/utils/axiosInstance';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+import { UserInfoStore } from '@/store/UserInfo';
+import Loading from '@/app/loading';
+import { spec } from 'node:test/reporters';
+
+// 쿼리 관련 통합 검색 정보 조회 API
+const fetchRelatedQueryInfos = ({ queryKey }: any) => {
+  const query = queryKey[1];
+  return axiosInstance.get(
+    `/public/community/search/tags?q=${query}&limit=${10}`
+  );
+};
+
+// 회원의 구독한 태그 목록 정보 조회 API
+const fetchMySubscribedTagInfos = () => {
+  return axiosInstance.get(`/private/subscribe/my/subscribed-tags`);
+};
+
+// 태그 구독하기 API
+const subscribeTag = (tagName: string) => {
+  return axiosInstance.post(`/private/subscribe?tag=${tagName}`);
+};
+
+// 태그 구독 취소하기 API
+const unsubscribeTag = (tagId: number) => {
+  return axiosInstance.delete(`/private/subscribe/tags/${tagId}`);
+};
+
+// 태그 새 글 알림 활성화 API
+const enableReceiveNotification = (tagId: number) => {
+  return axiosInstance.post(`/private/subscribe/tags/${tagId}/notification`);
+};
+
+// 태그 새 글 알림 비활성화 API
+const disableReceiveNotification = (tagId: number) => {
+  return axiosInstance.delete(`/private/subscribe/tags/${tagId}/notification`);
+};
 
 export default function Search() {
-  const resData = tagInfos;
-  const [tagSubscribedData, setTagSubscribedData] = useState(tagSubscribedInfo);
+  const queryClient = useQueryClient();
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isOpenSearchedResultList, setIsOpenSearchedResultList] =
-    useState<boolean>(false);
-  const [isSuccessSearchResult, setIsSUccessSearchResult] =
-    useState<boolean>(false);
-  const debouncedSearchQuery = useDebounce(searchQuery, 400);
-  const [isToastClosing, setIsToastClosing] = useState(false);
-  const [isOpenCopyLinkCompleteToast, setIsOpenCopyLinkCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenSubscribeCompleteToast, setIsOpenSubscribeCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenUnSubscribeCompleteToast, setIsOpenUnSubscribeCompleteToast] =
-    useState<boolean>(false);
-  const [isOpenBottomDrawer, setIsOpenBottomDrawer] = useState<boolean>(false);
-  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
-    useState<boolean>(false);
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
 
-  const searchedResultListRef = useRef<HTMLInputElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const updateToastMessage = ToastInfoStore(
+    (state: any) => state.updateToastMessage
+  );
+  const updateOpenToastStatus = ToastInfoStore(
+    (state: any) => state.updateOpenToastStatus
+  );
 
   const router = useRouter();
   const params = useSearchParams();
 
   const query: string = params?.get('q') || '';
   const tagQuery: string = params?.get('tag') || '';
+
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isOpenSearchedResultList, setIsOpenSearchedResultList] =
+    useState<boolean>(false);
+  const [isSuccessSearchResult, setIsSuccessSearchResult] =
+    useState<boolean>(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [isOpenBottomDrawer, setIsOpenBottomDrawer] = useState<boolean>(false);
+  const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
+    useState<boolean>(false);
+  const [subscribedTagInfo, setSubscribedTagInfo] =
+    useState<MySubscribedTagInfo>({
+      tagId: 0,
+      tagName: '',
+      isReceiveNotification: false,
+      isSubscribed: false,
+    });
+
+  const searchedResultListRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: ['subscribedTagInfo'],
+        queryFn: fetchMySubscribedTagInfos,
+        enabled: userInfo.isAuth && !!tagQuery, // 사용자 인증과 태그 쿼리가 있을 때만 활성화
+        retry: 0,
+      },
+      {
+        queryKey: ['relatedQueryInfos', query || tagQuery],
+        queryFn: fetchRelatedQueryInfos,
+        enabled: !!(query || tagQuery), // query나 tagQuery가 존재할 때만 활성화
+        retry: 0,
+      },
+    ],
+  });
+
+  const isPending = results.some((result) => result.isLoading);
+
+  const subscribedTagInfoResData: MySubscribedTagInfo[] =
+    results[0].data?.data.response;
+  const searchRelatedIntegrationInfoResData: SearchRelatedIntegrationInfo =
+    results[1].data?.data.response;
+
+  useEffect(() => {
+    if (searchRelatedIntegrationInfoResData && !isSuccessSearchResult) {
+      setIsSuccessSearchResult(true);
+    }
+  }, [searchRelatedIntegrationInfoResData, isSuccessSearchResult]);
+
+  useEffect(() => {
+    if (subscribedTagInfoResData && tagQuery) {
+      const matchingTagInfo = subscribedTagInfoResData.find(
+        (item: MySubscribedTagInfo) => item.tagName === tagQuery
+      );
+
+      if (matchingTagInfo) {
+        setSubscribedTagInfo({
+          ...matchingTagInfo,
+          isSubscribed: true,
+        });
+      }
+    }
+  }, [subscribedTagInfoResData, tagQuery]);
+
+  const subscribeTagMutation = useMutation({
+    mutationFn: subscribeTag,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 구독 중인 태그예요');
+              break;
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setSubscribedTagInfo((prevData) => ({
+            ...prevData,
+            isSubscribed: true,
+          }));
+          updateToastMessage(`"${tagQuery}" 구독이 완료되었습니다`);
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const unsubscribeTagMutation = useMutation({
+    mutationFn: unsubscribeTag,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          setSubscribedTagInfo((prevData) => ({
+            ...prevData,
+            isSubscribed: false,
+          }));
+          updateToastMessage(`"${tagQuery}" 구독이 취소되었습니다`);
+          updateOpenToastStatus(true);
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const enableReceiveNotificationMutation = useMutation({
+    mutationFn: enableReceiveNotification,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 알림이 활성화되어 있어요');
+              handleButtonInBottomDrawaberClick();
+              break;
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          queryClient.invalidateQueries({
+            queryKey: ['subscribedTagInfo'],
+          });
+          handleButtonInBottomDrawaberClick();
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
+
+  const disableReceiveNotificationMutation = useMutation({
+    mutationFn: disableReceiveNotification,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      const resData: any = error.response;
+
+      switch (resData?.status) {
+        case 409:
+          switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 알림이 비활성화되어 있어요');
+              handleButtonInBottomDrawaberClick();
+              break;
+            default:
+              alert('정의되지 않은 http code입니다.');
+          }
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          queryClient.invalidateQueries({
+            queryKey: ['subscribedTagInfo'],
+          });
+          handleButtonInBottomDrawaberClick();
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,60 +335,6 @@ export default function Search() {
   };
 
   useEffect(() => {
-    if (isOpenCopyLinkCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenCopyLinkCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenCopyLinkCompleteToast]);
-
-  useEffect(() => {
-    if (isOpenSubscribeCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenSubscribeCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenSubscribeCompleteToast]);
-
-  useEffect(() => {
-    if (isOpenUnSubscribeCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenUnSubscribeCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenUnSubscribeCompleteToast]);
-
-  useEffect(() => {
     if (searchQuery) setIsOpenSearchedResultList(true);
   }, [searchQuery]);
 
@@ -168,7 +361,7 @@ export default function Search() {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (searchQuery !== debouncedSearchQuery) return;
-      if (!isOpenSearchedResultList || !resData.length) return;
+      if (!isOpenSearchedResultList) return;
 
       const activeElement = document.activeElement;
       const itemList = document.querySelectorAll('.search-result-item');
@@ -185,7 +378,7 @@ export default function Search() {
         (itemList[prevIndex] as HTMLElement).focus();
       }
     },
-    [debouncedSearchQuery, searchQuery, resData, isOpenSearchedResultList]
+    [debouncedSearchQuery, searchQuery, isOpenSearchedResultList]
   );
 
   useEffect(() => {
@@ -214,6 +407,8 @@ export default function Search() {
     router.push(`/community/search?q=${searchQuery}`);
     setIsOpenSearchedResultList(false);
   };
+
+  if (isPending) return <Loading />;
 
   return (
     <div className='flex flex-col gap-y-14 w-[30rem] mx-auto pt-10 pb-24'>
@@ -272,8 +467,6 @@ export default function Search() {
             <SearchTagList
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              setIsSUccessSearchResult={setIsSUccessSearchResult}
-              resData={resData}
               debouncedSearchQuery={debouncedSearchQuery}
             />
           </div>
@@ -299,7 +492,7 @@ export default function Search() {
                 <rect width='200' height='100' x='0' y='0' />
               </clipPath>
             </defs>
-            <g clip-path='url(#__lottie_element_2)'>
+            <g clipPath='url(#__lottie_element_2)'>
               <g
                 transform='matrix(1,0,0,1,77.94700622558594,31.194000244140625)'
                 opacity='1'
@@ -311,7 +504,7 @@ export default function Search() {
                 >
                   <path
                     fill='rgb(128,132,144)'
-                    fill-opacity='0.3'
+                    fillOpacity='0.3'
                     d=' M4.734000205993652,23.618000030517578 C4.734000205993652,23.618000030517578 -17.270999908447266,23.618000030517578 -17.270999908447266,23.618000030517578 C-18.59600067138672,23.618000030517578 -19.672000885009766,22.54400062561035 -19.672000885009766,21.2189998626709 C-19.672000885009766,21.2189998626709 -19.672000885009766,-21.2189998626709 -19.672000885009766,-21.2189998626709 C-19.672000885009766,-22.54400062561035 -18.59600067138672,-23.618000030517578 -17.270999908447266,-23.618000030517578 C-17.270999908447266,-23.618000030517578 17.273000717163086,-23.618000030517578 17.273000717163086,-23.618000030517578 C18.597999572753906,-23.618000030517578 19.672000885009766,-22.54400062561035 19.672000885009766,-21.2189998626709 C19.672000885009766,-21.2189998626709 19.672000885009766,8.680000305175781 19.672000885009766,8.680000305175781 C19.672000885009766,8.680000305175781 4.734000205993652,23.618000030517578 4.734000205993652,23.618000030517578z'
                   ></path>
                 </g>
@@ -321,7 +514,7 @@ export default function Search() {
                 >
                   <path
                     fill='rgb(128,132,144)'
-                    fill-opacity='0.3'
+                    fillOpacity='0.3'
                     d=' M-7.468999862670898,7.468999862670898 C-7.468999862670898,7.468999862670898 -7.468999862670898,-5.070000171661377 -7.468999862670898,-5.070000171661377 C-7.468999862670898,-6.395999908447266 -6.394999980926514,-7.468999862670898 -5.070000171661377,-7.468999862670898 C-5.070000171661377,-7.468999862670898 7.468999862670898,-7.468999862670898 7.468999862670898,-7.468999862670898 C7.468999862670898,-7.468999862670898 -7.468999862670898,7.468999862670898 -7.468999862670898,7.468999862670898z'
                   ></path>
                 </g>
@@ -334,7 +527,7 @@ export default function Search() {
                 <g opacity='1' transform='matrix(1,0,0,1,14.25,14.25)'>
                   <path
                     fill='rgb(128,132,144)'
-                    fill-opacity='1'
+                    fillOpacity='1'
                     d=' M14,0 C14,7.730999946594238 7.730999946594238,14 0,14 C-7.73199987411499,14 -14,7.730999946594238 -14,0 C-14,-7.73199987411499 -7.73199987411499,-14 0,-14 C7.730999946594238,-14 14,-7.73199987411499 14,0z'
                   ></path>
                 </g>
@@ -344,7 +537,7 @@ export default function Search() {
                 >
                   <path
                     fill='rgb(51,60,74)'
-                    fill-opacity='1'
+                    fillOpacity='1'
                     d=' M0.8309999704360962,5.138000011444092 C0.8309999704360962,5.138000011444092 -1.0779999494552612,5.138000011444092 -1.0779999494552612,5.138000011444092 C-1.0779999494552612,5.138000011444092 -1.0779999494552612,4.151000022888184 -1.0779999494552612,4.151000022888184 C-1.0779999494552612,2.2130000591278076 0.12600000202655792,1.444000005722046 1.0049999952316284,0.8809999823570251 C1.7549999952316284,0.4020000100135803 2.184999942779541,0.09600000083446503 2.3499999046325684,-0.621999979019165 C2.493000030517578,-1.2430000305175781 2.378999948501587,-1.7940000295639038 2.009999990463257,-2.257999897003174 C1.5379999876022339,-2.8469998836517334 0.7020000219345093,-3.2290000915527344 -0.12300000339746475,-3.2290000915527344 C-1.475000023841858,-3.2290000915527344 -2.572999954223633,-2.13100004196167 -2.572999954223633,-0.7799999713897705 C-2.572999954223633,-0.7799999713897705 -4.48199987411499,-0.7799999713897705 -4.48199987411499,-0.7799999713897705 C-4.48199987411499,-3.183000087738037 -2.5269999504089355,-5.138000011444092 -0.12300000339746475,-5.138000011444092 C1.281999945640564,-5.138000011444092 2.671999931335449,-4.489999771118164 3.502000093460083,-3.447000026702881 C4.230999946594238,-2.5309998989105225 4.48199987411499,-1.3760000467300415 4.210999965667725,-0.1940000057220459 C3.864000082015991,1.319000005722046 2.805999994277954,1.9950000047683716 2.0339999198913574,2.490000009536743 C1.2000000476837158,3.0230000019073486 0.8309999704360962,3.2939999103546143 0.8309999704360962,4.151000022888184 C0.8309999704360962,4.151000022888184 0.8309999704360962,5.138000011444092 0.8309999704360962,5.138000011444092z'
                   ></path>
                 </g>
@@ -354,7 +547,7 @@ export default function Search() {
                 >
                   <path
                     fill='rgb(51,60,74)'
-                    fill-opacity='1'
+                    fillOpacity='1'
                     d=' M0,-1.5269999504089355 C-0.843999981880188,-1.5269999504089355 -1.5269999504089355,-0.8429999947547913 -1.5269999504089355,0 C-1.5269999504089355,0.8429999947547913 -0.843999981880188,1.5269999504089355 0,1.5269999504089355 C0.843999981880188,1.5269999504089355 1.5269999504089355,0.8429999947547913 1.5269999504089355,0 C1.5269999504089355,-0.8429999947547913 0.843999981880188,-1.5269999504089355 0,-1.5269999504089355z'
                   ></path>
                 </g>
@@ -376,7 +569,7 @@ export default function Search() {
         <div>
           <h2 className='font-bold text-lg text-[#333d4b]'>검색된 태그</h2>
           <Link
-            href={`/community/feed?tag=${'테스트'}`}
+            href={`/community/feed?tag=${tagQuery}`}
             className='w-full flex justify-between items-center mt-3 bg-[#f9fafb] p-4 rounded-md'
           >
             <div className='flex items-center gap-x-3'>
@@ -404,12 +597,14 @@ export default function Search() {
               </div>
               <div className='flex flex-col items-start text-[#333d4b] font-medium'>
                 <span className='text-sm'>{tagQuery}</span>
-                <span className='text-xs font-light'>게시글 3개</span>
+                <span className='text-xs font-light'>
+                  게시글 {searchRelatedIntegrationInfoResData.postsCount}개
+                </span>
               </div>
             </div>
 
             <div>
-              {tagSubscribedData.isSubscribed ? (
+              {subscribedTagInfo.isSubscribed ? (
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -417,7 +612,7 @@ export default function Search() {
                   }}
                   className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full border border-[#3a8af9]'
                 >
-                  {tagSubscribedData.isReceiveNotification ? (
+                  {subscribedTagInfo.isReceiveNotification ? (
                     <svg
                       xmlns='http://www.w3.org/2000/svg'
                       height='17.5'
@@ -459,17 +654,7 @@ export default function Search() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    setIsOpenSubscribeCompleteToast(false);
-                    setIsOpenUnSubscribeCompleteToast(false);
-
-                    setTimeout(() => {
-                      setIsOpenSubscribeCompleteToast(true);
-                    }, 50);
-
-                    setTagSubscribedData((prevData) => ({
-                      ...prevData,
-                      isSubscribed: true,
-                    }));
+                    subscribeTagMutation.mutate(tagQuery);
                   }}
                   className='flex justify-center items-center gap-x-[0.175rem] px-4 py-2 rounded-md bg-[#3a8af9] hover:bg-[#1b64da]'
                 >
@@ -486,14 +671,18 @@ export default function Search() {
       {isSuccessSearchResult && (query || tagQuery) && (
         <div className='mt-1'>
           <h2 className='font-bold text-lg text-[#333d4b]'>연관 검색 태그</h2>
-          <RelatedSearchTagList />
+          <RelatedSearchTagList
+            resData={searchRelatedIntegrationInfoResData.relatedTags}
+          />
         </div>
       )}
 
       {isSuccessSearchResult && (query || tagQuery) && (
         <div>
-          <h2 className='font-bold text-lg text-[#333d4b]'>커뮤니티 게시글</h2>
-          <RelatedSearchPostList searchQuery={searchQuery} />
+          <h2 className='font-bold text-lg text-[#333d4b]'>연관 게시글</h2>
+          <RelatedSearchPostList
+            resData={searchRelatedIntegrationInfoResData.posts}
+          />
         </div>
       )}
 
@@ -508,36 +697,9 @@ export default function Search() {
 
           <div>
             <h2 className='font-bold text-lg text-[#333d4b]'>실시간 인기 글</h2>
-            <HotPostList searchQuery={searchQuery} />
+            <HotPostList />
           </div>
         </>
-      )}
-
-      {(isOpenSubscribeCompleteToast || isOpenUnSubscribeCompleteToast) && (
-        <Toast
-          className={`w-fit fixed bottom-14 left-14 bg-[#222222] py-3 pr-5 ${
-            isToastClosing ? 'toast-fade-out' : 'toast-fade-in'
-          }`}
-        >
-          <div className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-green-500 dark:bg-green-800 dark:text-green-200'>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              height='27.5px'
-              viewBox='0 -960 960 960'
-              width='27.5px'
-              fill='#75d5ad'
-            >
-              <path d='m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z' />
-            </svg>
-          </div>
-          <div className='ml-1 text-[0.825rem] font-medium text-white'>
-            {isOpenSubscribeCompleteToast ? (
-              <>&quot;{tagQuery}&quot; 구독이 완료되었습니다</>
-            ) : (
-              <>&quot;{tagQuery}&quot; 구독이 취소되었습니다</>
-            )}
-          </div>
-        </Toast>
       )}
 
       {(isOpenBottomDrawer || isBottomDrawerClosing) && (
@@ -586,11 +748,9 @@ export default function Search() {
               <div className='flex flex-col items-start gap-y-1 pb-4 border-b'>
                 <button
                   onClick={(e) => {
-                    e.preventDefault();
-                    setTagSubscribedData((prevData) => ({
-                      ...prevData,
-                      isReceiveNotification: true,
-                    }));
+                    enableReceiveNotificationMutation.mutate(
+                      subscribedTagInfo.tagId
+                    );
 
                     handleButtonInBottomDrawaberClick();
                   }}
@@ -602,7 +762,7 @@ export default function Search() {
                     viewBox='0 -960 960 960'
                     width='20'
                     fill={`${
-                      tagSubscribedData.isReceiveNotification
+                      subscribedTagInfo.isReceiveNotification
                         ? '#5f646b'
                         : '#a0a5ac'
                     }`}
@@ -611,13 +771,13 @@ export default function Search() {
                   </svg>
                   <span
                     className={`relative flex items-center text-[0.825rem] ${
-                      tagSubscribedData.isReceiveNotification
+                      subscribedTagInfo.isReceiveNotification
                         ? 'font-bold'
                         : 'font-medium'
                     }`}
                   >
                     새 글 알림 받기
-                    {tagSubscribedData.isReceiveNotification && (
+                    {subscribedTagInfo.isReceiveNotification && (
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
                         height='24px'
@@ -633,12 +793,10 @@ export default function Search() {
                 </button>
 
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setTagSubscribedData((prevData) => ({
-                      ...prevData,
-                      isReceiveNotification: false,
-                    }));
+                  onClick={() => {
+                    disableReceiveNotificationMutation.mutate(
+                      subscribedTagInfo.tagId
+                    );
 
                     handleButtonInBottomDrawaberClick();
                   }}
@@ -650,7 +808,7 @@ export default function Search() {
                     viewBox='0 -960 960 960'
                     width='20'
                     fill={`${
-                      !tagSubscribedData.isReceiveNotification
+                      !subscribedTagInfo.isReceiveNotification
                         ? '#5f646b'
                         : '#a0a5ac'
                     }`}
@@ -659,13 +817,13 @@ export default function Search() {
                   </svg>
                   <span
                     className={`relative flex items-center text-[0.825rem] ${
-                      !tagSubscribedData.isReceiveNotification
+                      !subscribedTagInfo.isReceiveNotification
                         ? 'font-bold'
                         : 'font-medium'
                     }`}
                   >
                     새 글 알림 끄기
-                    {!tagSubscribedData.isReceiveNotification && (
+                    {!subscribedTagInfo.isReceiveNotification && (
                       <svg
                         xmlns='http://www.w3.org/2000/svg'
                         height='24px'
@@ -684,20 +842,7 @@ export default function Search() {
               <div>
                 <button
                   onClick={(e) => {
-                    e.preventDefault();
-
-                    setIsOpenSubscribeCompleteToast(false);
-                    setIsOpenUnSubscribeCompleteToast(false);
-
-                    setTimeout(() => {
-                      setIsOpenUnSubscribeCompleteToast(true);
-                    }, 50);
-
-                    setTagSubscribedData((prevData) => ({
-                      ...prevData,
-                      isSubscribed: false,
-                    }));
-
+                    unsubscribeTagMutation.mutate(subscribedTagInfo.tagId);
                     closeDrawer();
                   }}
                   className='w-full flex items-center gap-x-2 py-2'

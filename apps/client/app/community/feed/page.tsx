@@ -39,6 +39,8 @@ const disableReceiveNotification = (tagId: number) => {
 export default function Feed() {
   const queryClient = useQueryClient();
 
+  const userInfo = UserInfoStore((state: any) => state.userInfo);
+
   const updateToastMessage = ToastInfoStore(
     (state: any) => state.updateToastMessage
   );
@@ -46,11 +48,10 @@ export default function Feed() {
     (state: any) => state.updateOpenToastStatus
   );
 
-  const userInfo = UserInfoStore((state: any) => state.userInfo);
-
   const { isPending, isError, data, error } = useQuery({
     queryKey: ['subscribedTagInfo'],
     queryFn: fetchMySubscribedTagInfos,
+    enabled: userInfo.isAuth,
     retry: 0,
   });
 
@@ -63,6 +64,9 @@ export default function Feed() {
       switch (resData?.status) {
         case 409:
           switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('이미 구독 중인 태그예요');
+              break;
             default:
               alert('정의되지 않은 http code입니다.');
           }
@@ -80,7 +84,7 @@ export default function Feed() {
           queryClient.invalidateQueries({
             queryKey: ['subscribedTagInfo'],
           });
-          updateToastMessage(`"${tagQuery}" 구독이 완료되었습니다`);
+          updateToastMessage(`"${query}" 구독이 완료되었습니다`);
           updateOpenToastStatus(true);
           break;
         default:
@@ -112,9 +116,12 @@ export default function Feed() {
 
       switch (httpStatusCode) {
         case 200:
-          updateToastMessage(`"${tagQuery}" 구독이 취소되었습니다`);
+          setSubscribedTagInfo((prevData) => ({
+            ...prevData,
+            isSubscribed: false,
+          }));
+          updateToastMessage(`"${query}" 구독이 취소되었습니다`);
           updateOpenToastStatus(true);
-          closeDrawer();
           break;
         default:
           alert('정의되지 않은 http status code입니다');
@@ -207,25 +214,20 @@ export default function Feed() {
       isSubscribed: false,
     });
 
-  // 현재 검색 중인 태그 쿼리 가져오기
-  const [tagQuery, setTagQuery] = useState<string>('');
-
   const router = useRouter();
   const params = useSearchParams();
 
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const query = params?.get('tag') || '';
-    setTagQuery(query);
-  }, [params]);
+  const query = params?.get('tag') || '';
 
   useEffect(() => {
-    if (data && tagQuery) {
+    if (data && query) {
       const resData = data?.data.response;
       const matchingTagInfo = resData.find(
-        (item: MySubscribedTagInfo) => item.tagName === tagQuery
+        (item: MySubscribedTagInfo) => item.tagName === query
       );
+
       if (matchingTagInfo) {
         setSubscribedTagInfo({
           ...matchingTagInfo,
@@ -233,17 +235,7 @@ export default function Feed() {
         });
       }
     }
-  }, [data, tagQuery]);
-
-  const [selectedTagInfo, setSelectedTagInfo] = useState<{
-    tagId: number;
-    tagName: string;
-    isReceiveNotification: boolean;
-  }>({
-    tagId: 0,
-    tagName: '',
-    isReceiveNotification: false,
-  });
+  }, [data, query]);
 
   const [isOpenBottomDrawer, setIsOpenBottomDrawer] = useState<boolean>(false);
   const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
@@ -350,7 +342,7 @@ export default function Feed() {
       </div>
 
       <div className='w-full flex flex-col gap-y-4 justify-center items-center'>
-        {tagQuery && (
+        {query && (
           <>
             <h1 className='flex items-center gap-x-1 mx-auto font-semibold text-base text-[#333d4b]'>
               <div
@@ -374,7 +366,7 @@ export default function Feed() {
                   ></path>
                 </svg>
               </div>
-              <span className='text-xl font-semibold'>{tagQuery}</span>
+              <span className='text-xl font-semibold'>{query}</span>
             </h1>
 
             <div>
@@ -426,7 +418,7 @@ export default function Feed() {
               ) : (
                 <button
                   onClick={() => {
-                    subscribeTagMutation.mutate(tagQuery);
+                    subscribeTagMutation.mutate(query);
                   }}
                   className='relative w-24 flex justify-center items-center gap-x-[0.175rem] px-7 py-2 rounded-full bg-[#3a8af9] border border-[#3a8af9]'
                 >
@@ -494,11 +486,6 @@ export default function Feed() {
                 <div className='flex flex-col items-start gap-y-1 pb-4 border-b'>
                   <button
                     onClick={() => {
-                      setSubscribedTagInfo((prevData) => ({
-                        ...prevData,
-                        isReceiveNotification: true,
-                      }));
-
                       enableReceiveNotificationMutation.mutate(
                         subscribedTagInfo.tagId
                       );
@@ -545,11 +532,6 @@ export default function Feed() {
 
                   <button
                     onClick={() => {
-                      setSubscribedTagInfo((prevData) => ({
-                        ...prevData,
-                        isReceiveNotification: false,
-                      }));
-
                       disableReceiveNotificationMutation.mutate(
                         subscribedTagInfo.tagId
                       );
@@ -598,18 +580,7 @@ export default function Feed() {
                 <div>
                   <button
                     onClick={(e) => {
-                      updateToastMessage(
-                        `"${subscribedTagInfo.tagName}" 구독이 취소되었습니다`
-                      );
-                      updateOpenToastStatus(true);
-
-                      setSubscribedTagInfo((prevData) => ({
-                        ...prevData,
-                        isSubscribed: false,
-                      }));
-
                       unsubscribeTagMutation.mutate(subscribedTagInfo.tagId);
-
                       closeDrawer();
                     }}
                     className='w-full flex items-center gap-x-2 py-2'
@@ -631,7 +602,7 @@ export default function Feed() {
               총 {searchedPostNum}개
             </p>
             <FeedPostList
-              searchQuery={tagQuery}
+              searchQuery={query}
               setSearchedPostNum={setSearchedPostNum}
             />
           </div>
