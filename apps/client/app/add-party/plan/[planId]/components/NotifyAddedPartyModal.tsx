@@ -148,8 +148,8 @@ export default function NotifyAddedPartyModal({
               y2='104.318'
               gradientUnits='userSpaceOnUse'
             >
-              <stop offset='0.484' stop-color='#11C78F'></stop>
-              <stop offset='1' stop-color='#53E3AC'></stop>
+              <stop offset='0.484' stopColor='#11C78F'></stop>
+              <stop offset='1' stopColor='#53E3AC'></stop>
             </linearGradient>
             <linearGradient
               id='paint1_linear'
@@ -159,8 +159,8 @@ export default function NotifyAddedPartyModal({
               y2='104.318'
               gradientUnits='userSpaceOnUse'
             >
-              <stop offset='0.484' stop-color='#11C78F'></stop>
-              <stop offset='1' stop-color='#53E3AC'></stop>
+              <stop offset='0.484' stopColor='#11C78F'></stop>
+              <stop offset='1' stopColor='#53E3AC'></stop>
             </linearGradient>
             <linearGradient
               id='paint2_linear'
@@ -170,8 +170,8 @@ export default function NotifyAddedPartyModal({
               y2='263.295'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
             <linearGradient
               id='paint3_linear'
@@ -181,8 +181,8 @@ export default function NotifyAddedPartyModal({
               y2='209.724'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
             <linearGradient
               id='paint4_linear'
@@ -192,8 +192,8 @@ export default function NotifyAddedPartyModal({
               y2='156.153'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
             <linearGradient
               id='paint5_linear'
@@ -203,8 +203,8 @@ export default function NotifyAddedPartyModal({
               y2='178.546'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
             <linearGradient
               id='paint6_linear'
@@ -214,8 +214,8 @@ export default function NotifyAddedPartyModal({
               y2='124.976'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
             <linearGradient
               id='paint7_linear'
@@ -225,8 +225,8 @@ export default function NotifyAddedPartyModal({
               y2='81.185'
               gradientUnits='userSpaceOnUse'
             >
-              <stop stop-color='#E5E5E3'></stop>
-              <stop offset='0.201' stop-color='#F2F1ED'></stop>
+              <stop stopColor='#E5E5E3'></stop>
+              <stop offset='0.201' stopColor='#F2F1ED'></stop>
             </linearGradient>
           </defs>
         </svg>

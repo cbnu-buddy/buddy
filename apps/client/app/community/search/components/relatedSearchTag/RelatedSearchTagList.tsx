@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Loading from '@/app/loading';
-import axiosInstance from '@/utils/axiosInstance';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { TagInfo } from '@/types/tag';
 import HotTagListItem from './RelatedSearchTagListItem';
 import EmptyHotTagListItem from './EmptyRelatedSearchTagListItem';
-import { tagInfos } from '@/data/mock/tagInfos';
 
-export default function RelatedSearchTagList() {
+interface RelatedSearchTagListProps {
+  resData: TagInfo[];
+}
+
+export default function RelatedSearchTagList(props: RelatedSearchTagListProps) {
+  const { resData } = props;
+
   const params = useSearchParams();
 
   const page = Number(params?.get('page')) || 1;
@@ -23,8 +26,6 @@ export default function RelatedSearchTagList() {
 
   const router = useRouter();
 
-  const resData = tagInfos;
-
   const handleExpand = () => {
     setVisibleCount(resData.length);
     setIsExpandRelatedSearchTagList(true);
@@ -32,13 +33,18 @@ export default function RelatedSearchTagList() {
 
   return (
     <div>
-      <div className='mt-2 grid grid-cols-2'>
-        {resData?.length === 0 && <EmptyHotTagListItem />}
-        {resData
-          ?.slice(0, visibleCount)
-          .map((tagInfo: TagInfo, index: number) => (
-            <HotTagListItem tagInfo={tagInfo} key={index} />
-          ))}
+      <div>
+        {resData?.length === 0 ? (
+          <EmptyHotTagListItem />
+        ) : (
+          <div className='mt-2 grid grid-cols-2'>
+            {resData
+              ?.slice(0, visibleCount)
+              .map((tagInfo: TagInfo, index: number) => (
+                <HotTagListItem tagInfo={tagInfo} key={index} />
+              ))}
+          </div>
+        )}
       </div>
 
       {resData.length > 10 && !isExpandRelatedSearchTagList && (

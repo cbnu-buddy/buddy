@@ -99,8 +99,8 @@ export default function RelatedSearchPostListItem(
                     y2='16.45'
                     gradientUnits='userSpaceOnUse'
                   >
-                    <stop stop-color='#F09' />
-                    <stop offset='1' stop-color='#F09' />
+                    <stop stopColor='#F09' />
+                    <stop offset='1' stopColor='#F09' />
                   </linearGradient>
                   <linearGradient
                     id='paint1_linear_10118_43030'
@@ -110,8 +110,8 @@ export default function RelatedSearchPostListItem(
                     y2='16.45'
                     gradientUnits='userSpaceOnUse'
                   >
-                    <stop stop-color='#F09' />
-                    <stop offset='1' stop-color='#F09' />
+                    <stop stopColor='#F09' />
+                    <stop offset='1' stopColor='#F09' />
                   </linearGradient>
                 </defs>
               </svg>

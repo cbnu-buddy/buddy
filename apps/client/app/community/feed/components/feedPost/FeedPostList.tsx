@@ -36,8 +36,6 @@ export default function FeedPostList(props: FeedPostListProps) {
 
   const communityPostInfos: PostInfo[] = data?.data.response;
 
-  console.log(communityPostInfos);
-
   useEffect(() => {
     if (communityPostInfos) {
       setSearchedPostNum(communityPostInfos.length);

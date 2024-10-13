@@ -6,7 +6,7 @@ import useDebounce from '@/utils/hooks/useDebounce';
 import { useQuery } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-// 플랜 정보 조회 API
+// 연관 검색 태그 목록 정보 조회 API
 const fetchRelatedSearchTagInfos = ({ queryKey }: any) => {
   const tagName = queryKey[1];
   return axiosInstance.get(

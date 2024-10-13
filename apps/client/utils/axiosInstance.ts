@@ -25,6 +25,7 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       switch (error.response?.status) {
         case 401:
+          alert('로그인이 필요한 기능이에요');
           localStorage.removeItem('activeAuthorization');
           if (typeof window !== 'undefined') window.location.href = '/login';
           break;
