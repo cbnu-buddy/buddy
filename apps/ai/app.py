@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 import joblib
 import re
 import logging
 
 # Flask 애플리케이션 생성
 app = Flask(__name__)
+
+# Enable CORS for all routes (or configure specific routes)
+CORS(app)
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -25,16 +29,16 @@ def preprocess_text(text):
     text = re.sub(r'[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9 ]', '', text)
     return text
 
-@app.route('/kr-bad-word-predict', methods=['POST'])
+@app.route('/kr-bad-word-predict', methods=['GET'])
 def predict():
     if not svm_model or not vectorizer:
         return jsonify({'error': '모델 또는 벡터화기가 제대로 로드되지 않았습니다.'}), 500
 
-    if request.content_type != 'application/json':
-        return jsonify({'error': 'Content-Type은 application/json이어야 합니다.'}), 400
+    # 쿼리 매개변수에서 'q'를 가져옴
+    text = request.args.get('q', '')
 
-    data = request.json
-    text = data.get('text', '')
+    if not text:
+        return jsonify({'error': '텍스트가 제공되지 않았습니다.'}), 400
 
     # 텍스트 전처리
     preprocessed_text = preprocess_text(text)
@@ -49,12 +53,12 @@ def predict():
     # 예측
     try:
         prediction = svm_model.predict(text_vectorized)
-        is_profanity = bool(prediction[0])
+        isProfanity = bool(prediction[0])
     except Exception as e:
         logging.error(f"예측 중 오류 발생: {e}")
         return jsonify({'error': '예측에 실패했습니다.'}), 500
 
-    return jsonify({'text': text, 'is_profanity': is_profanity})
+    return jsonify({'text': text, 'isProfanity': isProfanity})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5050)  # 포트를 5050으로 변경
