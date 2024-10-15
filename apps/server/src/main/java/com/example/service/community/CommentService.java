@@ -32,6 +32,7 @@ public class CommentService {
     private final MemberRepository memberRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ReplyRepository ReplyRepository;
+    private final DetectedBadWordService detectedBadWordService;
 
     private final TokenProvider tokenProvider;
 
@@ -45,25 +46,32 @@ public class CommentService {
     */
     @Transactional
     public ApiResult<?> createComment(Long postId, HttpServletRequest request, String content) {
-        String userId = getUserIdFromToken(request);
-        Member member = memberRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+      String userId = getUserIdFromToken(request);
+      Member member = memberRepository.findByUserId(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+      if (Boolean.TRUE.equals(detectedBadWordService.isPenalized(member.getMemberId()).getResponse())) {
+        throw new CustomException(ErrorCode.PENALTY_RESTRICTION); // 403 에러 반환
+      }
 
-        Comment comment = new Comment();
-        comment.setPost(post);
-        comment.setMember(member);
-        comment.setPostContent(content);
-        comment.setCreatedTime(LocalDateTime.now());
-        comment.setModifiedTime(LocalDateTime.now());
 
-        commentRepository.save(comment);
-        return ApiResult.success("댓글이 작성되었습니다.");
+      Post post = postRepository.findById(postId)
+        .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+      Comment comment = new Comment();
+      comment.setPost(post);
+      comment.setMember(member);
+      comment.setPostContent(content);
+      comment.setCreatedTime(LocalDateTime.now());
+      comment.setModifiedTime(LocalDateTime.now());
+
+      commentRepository.save(comment);
+      return ApiResult.success("댓글이 작성되었습니다.");
     }
 
-    /*
+
+
+  /*
     댓글 삭제하기
     */
     @Transactional

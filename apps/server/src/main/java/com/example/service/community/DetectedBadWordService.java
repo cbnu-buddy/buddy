@@ -71,7 +71,7 @@ public class DetectedBadWordService {
    */
   public ApiResult<Boolean> isPenalized(Long memberId) {
     LocalDateTime now = LocalDateTime.now();
-    boolean isPenalized = memberPenaltiesRepository.findByMemberIdAndStartTimeAfter(memberId, now).isPresent();
+    boolean isPenalized = memberPenaltiesRepository.findByMemberIdAndEndTimeAfter(memberId, now).isPresent();
     return ApiResult.success(isPenalized);
   }
 }
