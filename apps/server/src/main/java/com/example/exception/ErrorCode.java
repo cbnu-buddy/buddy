@@ -24,6 +24,8 @@ public enum ErrorCode {
     MEMBER_NOT_PERMISSION_YET(HttpStatus.FORBIDDEN, "아직 승인되지 않은 회원입니다. 관리자에게 문의하세요"),
     MEMBER_NO_PERMISSION(HttpStatus.FORBIDDEN, "해당 회원에 권한이 없습니다"),
     UNAUTHORIZED_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    PENALTY_RESTRICTION_COMMENT(HttpStatus.FORBIDDEN, "패널티를 받아 댓글 작성이 제한되었습니다."),
+    PENALTY_RESTRICTION_REPLY(HttpStatus.FORBIDDEN, "패널티를 받아 답글 작성이 제한되었습니다."),
 
     // 404 NOT FOUND
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 회원이 없습니다."),

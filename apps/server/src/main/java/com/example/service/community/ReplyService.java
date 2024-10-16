@@ -29,6 +29,7 @@ public class ReplyService {
     private final MemberRepository memberRepository;
     private final ReplyLikeRepository replyLikeRepository;
     private final TokenProvider tokenProvider;
+    private final DetectedBadWordService detectedBadWordService;
 
 
     public String getUserIdFromToken(HttpServletRequest request) {
@@ -41,16 +42,21 @@ public class ReplyService {
     */
     @Transactional
     public ApiResult<?> createReply(Long commentId, HttpServletRequest request, String content) {
-        String userId = getUserIdFromToken(request);
-        Member member = memberRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+      String userId = getUserIdFromToken(request);
+      Member member = memberRepository.findByUserId(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+      // 패널티 여부 확인
+      if (Boolean.TRUE.equals(detectedBadWordService.isPenalized(member.getMemberId()).getResponse())) {
+        throw new CustomException(ErrorCode.PENALTY_RESTRICTION_REPLY); // 패널티 에러 반환
+      }
 
-        Reply reply = new Reply(comment, member, content);
-        replyRepository.save(reply);
-        return ApiResult.success("답글이 작성되었습니다.");
+      Comment comment = commentRepository.findById(commentId)
+        .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+      Reply reply = new Reply(comment, member, content);
+      replyRepository.save(reply);
+      return ApiResult.success("답글이 작성되었습니다.");
     }
 
     /*
