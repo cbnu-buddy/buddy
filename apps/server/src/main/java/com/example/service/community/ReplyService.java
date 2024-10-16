@@ -48,7 +48,7 @@ public class ReplyService {
 
       // 패널티 여부 확인
       if (Boolean.TRUE.equals(detectedBadWordService.isPenalized(member.getMemberId()).getResponse())) {
-        throw new CustomException(ErrorCode.PENALTY_RESTRICTION); // 패널티 에러 반환
+        throw new CustomException(ErrorCode.PENALTY_RESTRICTION_REPLY); // 패널티 에러 반환
       }
 
       Comment comment = commentRepository.findById(commentId)

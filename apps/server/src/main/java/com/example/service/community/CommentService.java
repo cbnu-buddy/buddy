@@ -51,7 +51,7 @@ public class CommentService {
         .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
       if (Boolean.TRUE.equals(detectedBadWordService.isPenalized(member.getMemberId()).getResponse())) {
-        throw new CustomException(ErrorCode.PENALTY_RESTRICTION); // 403 에러 반환
+        throw new CustomException(ErrorCode.PENALTY_RESTRICTION_COMMENT); // 403 에러 반환
       }
 
 
