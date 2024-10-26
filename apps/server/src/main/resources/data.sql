@@ -1,8 +1,8 @@
 use buddy;
 
--- INSERT INTO penalty_type (penalty_type_id, duration) VALUES (1, 600);
--- INSERT INTO penalty_type (penalty_type_id, duration) VALUES (2, 3600);
--- INSERT INTO penalty_type (penalty_type_id, duration) VALUES (3, 86400);
+INSERT INTO penalty_type (penalty_type_id, duration) VALUES (1, 600);
+INSERT INTO penalty_type (penalty_type_id, duration) VALUES (2, 3600);
+INSERT INTO penalty_type (penalty_type_id, duration) VALUES (3, 86400);
 
 -- UPDATE service SET url = 'https://www.netflix.com' WHERE service_id = 1;
 -- UPDATE service SET url = 'https://www.wavve.com' WHERE service_id = 2;
