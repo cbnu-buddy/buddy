@@ -56,6 +56,7 @@ public class CommunityService {
   private final PostLikeRepository postLikeRepository;
   private final CommentLikeRepository commentLikeRepository;
   private final ReplyLikeRepository replyLikeRepository;
+  private final MemberPenaltiesRepository memberPenaltiesRepository;
   private final PlanRepository planRepository;
   private final HttpServletRequest currentRequest;
 
@@ -445,6 +446,8 @@ public class CommunityService {
 
     // 게시글에 대한 좋아요 여부 판단
     boolean isLiked = isLoggedIn && member != null && postLikeRepository.existsByPostAndMember(post, member);
+    LocalDateTime now = LocalDateTime.now();
+    boolean isPenalized =  isLoggedIn && member != null && memberPenaltiesRepository.findByMemberIdAndEndTimeAfter(member.getMemberId(), now).isPresent();
 
     // 댓글 및 답글 데이터 변환
     List<PostsByTagInfoResponse.CommentDto> commentDtos = commentRepository.findByPost(post).stream()
@@ -453,6 +456,7 @@ public class CommunityService {
         List<Reply> replies = replyRepository.findByCommentId(comment.getId());
 
         boolean isCommentLiked = isLoggedIn && member != null && commentLikeRepository.existsByCommentAndMember(comment, member);
+
 
         // 각 답글에 대한 데이터 변환
         List<PostsByTagInfoResponse.CommentDto.ReplyDto> replyDtos = replies.stream()
@@ -525,6 +529,7 @@ public class CommunityService {
       .comments(commentDtos)
       .likeCount(postLikeRepository.countByPostId(post.getId()))
       .IsLiked(isLiked)
+      .IsPenalized(isPenalized)
       .build();
   }
 }

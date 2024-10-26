@@ -27,6 +27,7 @@ public class PostsByTagInfoResponse {
     private List<CommentDto> comments;
     private int likeCount;
     private boolean IsLiked;
+    private boolean IsPenalized;
 
     @Getter
     @Setter
@@ -67,6 +68,7 @@ public class PostsByTagInfoResponse {
         private AuthorDto writer;
         private List<ReplyDto> replies;
         private boolean IsLiked;
+
 
         @Getter
         @Setter
