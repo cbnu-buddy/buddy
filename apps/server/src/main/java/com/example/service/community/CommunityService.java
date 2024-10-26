@@ -447,7 +447,7 @@ public class CommunityService {
     // 게시글에 대한 좋아요 여부 판단
     boolean isLiked = isLoggedIn && member != null && postLikeRepository.existsByPostAndMember(post, member);
     LocalDateTime now = LocalDateTime.now();
-    boolean isPenalized = memberPenaltiesRepository.findByMemberIdAndEndTimeAfter(member.getMemberId(), now).isPresent();
+    boolean isPenalized =  isLoggedIn && member != null && memberPenaltiesRepository.findByMemberIdAndEndTimeAfter(member.getMemberId(), now).isPresent();
 
     // 댓글 및 답글 데이터 변환
     List<PostsByTagInfoResponse.CommentDto> commentDtos = commentRepository.findByPost(post).stream()
