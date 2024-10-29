@@ -17,6 +17,19 @@ import { AxiosError } from 'axios';
 import { ToastInfoStore } from '@/store/ToastInfo';
 import ConfirmDeleteCommunityPostReplyModal from './components/ConfirmDeleteCommunityPostReplyModal';
 import ConfirmDeleteCommunityPostCommentModal from './components/ConfirmDeleteCommunityPostCommentModal';
+import axiosAiServerInstance from '@/utils/axiosAIServerInstance';
+import RestrictGuideModal from '../../components/RestrictGuideModal';
+import DetectedBadWordGuideModal from '../../components/DetectedBadWordGuideModal';
+
+// 비속어 예측 API
+const fetchBadWordPrediction = (comment: string) => {
+  return axiosAiServerInstance.get(`/kr-bad-word-predict?q=${comment}`);
+};
+
+// 비속어 사용 내역 기록하기 API
+const logProfanityUsage = () => {
+  return axiosInstance.post(`/private/detected-bad-word`);
+};
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
@@ -96,6 +109,53 @@ export default function CommunityPostComment(props: DefaultProps) {
   );
 
   const router = useRouter();
+
+  const logProfanityUsageMutation = useMutation({
+    mutationFn: logProfanityUsage,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      // const resData: any = error.response;
+      // switch (resData?.status) {
+      //   case 409:
+      //     switch (resData?.data.error.status) {
+      //       case 'CONFLICT':
+      //         alert('이미 좋아요된 게시글입니다.');
+      //         break;
+      //       default:
+      //         alert('정의되지 않은 http code입니다.');
+      //     }
+      //     break;
+      //   default:
+      //     alert('정의되지 않은 http status code입니다');
+      // }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          if (data.data === '비속어 사용 내역이 기록되었습니다.') {
+            setOpenDetectedBadWordGuideModal('default');
+            break;
+          }
+
+          if (
+            data.data ===
+            '비속어 사용 내역이 기록되었으며, 패널티가 부여되었습니다.'
+          ) {
+            setOpenRestrictGuideModal('default');
+          }
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ['communityPostInfo'],
+          });
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
+  });
 
   const { isPending, isError, data, error } = useQuery({
     queryKey: ['communityPostInfo', postId],
@@ -256,6 +316,11 @@ export default function CommunityPostComment(props: DefaultProps) {
     useState<boolean>(false);
   const [isBottomDrawerClosing, setIsBottomDrawerClosing] =
     useState<boolean>(false);
+  const [openRestrictGuideModal, setOpenRestrictGuideModal] = useState<
+    string | undefined
+  >();
+  const [openDetectedBadWordGuideModal, setOpenDetectedBadWordGuideModal] =
+    useState<string | undefined>();
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -359,7 +424,7 @@ export default function CommunityPostComment(props: DefaultProps) {
       isCommentEditStatus &&
       !isReplyEditStatus
     ) {
-      handleModifyComment();
+      handleEditComment();
       return;
     }
 
@@ -374,27 +439,61 @@ export default function CommunityPostComment(props: DefaultProps) {
     }
   };
 
-  const handleAddReply = () => {
-    if (comment) {
-      addCommunityPostReplyMutation.mutate({ commentId, comment });
+  const handleProfanityCheck = async (type: string) => {
+    try {
+      const response = await fetchBadWordPrediction(comment);
+      const result = response.data;
+
+      if (result.isProfanity) {
+        logProfanityUsageMutation.mutate();
+      } else {
+        switch (type) {
+          case 'add':
+            addCommunityPostReplyMutation.mutate({ commentId, comment });
+            break;
+          case 'editComment':
+            modifyCommunityPostCommentMutation.mutate({
+              commentId: selectedCommentInfo.commentId,
+              comment,
+            });
+            break;
+          case 'editReply':
+            modifyCommunityPostReplyMutation.mutate({
+              replyId: selectedReplyInfo.replyId,
+              comment,
+            });
+            break;
+          default:
+            break;
+        }
+      }
+    } catch (error: unknown) {
+      // 'unknown'을 처리
+      if (error instanceof AxiosError) {
+        // AxiosError인지 확인
+        console.log('Axios Error:', error.response?.data || error.message);
+      } else {
+        console.error('Unknown Error:', error);
+      }
+      alert('비속어 예측 중 오류가 발생했습니다.');
     }
   };
 
-  const handleModifyComment = () => {
+  const handleAddReply = () => {
     if (comment) {
-      modifyCommunityPostCommentMutation.mutate({
-        commentId: selectedCommentInfo.commentId,
-        comment,
-      });
+      handleProfanityCheck('add'); // 비속어 확인 후 댓글 등록
+    }
+  };
+
+  const handleEditComment = () => {
+    if (comment) {
+      handleProfanityCheck('editComment'); // 비속어 확인 후 댓글 등록
     }
   };
 
   const handleModifyReply = () => {
     if (comment) {
-      modifyCommunityPostReplyMutation.mutate({
-        replyId: selectedReplyInfo.replyId,
-        comment,
-      });
+      handleProfanityCheck('editReply'); // 비속어 확인 후 댓글 등록
     }
   };
 
@@ -521,59 +620,82 @@ export default function CommunityPostComment(props: DefaultProps) {
       </div>
       <div className='w-[37.5rem] fixed bottom-0 bg-[#edeff1] px-4 py-[0.675rem]'>
         <div className='flex justify-between  items-center gap-x-2'>
-          <textarea
-            ref={textareaRef}
-            placeholder='댓글을 작성해 주세요.'
-            value={comment}
-            className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar'
-            onChange={(e) => adjustHeight(e)}
-            onKeyDown={handleKeyDown}
-          />
-          {isCommentEditStatus || isReplyEditStatus ? (
-            <div className='flex items-center'>
+          {postInfo.isPenalized ? (
+            <>
+              {' '}
+              <span className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar text-gray-400'>
+                댓글 및 답글 작성이 제한된 상태입니다.
+              </span>
               <button
-                onClick={() => {
-                  setComment('');
-                  setIsCommentEditStatus(false);
-                  setIsReplyEditStatus(false);
-                }}
-                className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
+                disabled={true}
+                className={`w-[3.75rem] py-[0.4rem] font-medium ${
+                  comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
+                } text-xs text-white rounded-[0.3rem]`}
               >
-                취소
+                등록
               </button>
-              {isCommentEditStatus && (
-                <button
-                  onClick={handleModifyComment}
-                  disabled={comment ? false : true}
-                  className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                    comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
-                  } text-xs text-white rounded-[0.3rem]`}
-                >
-                  수정
-                </button>
-              )}
-              {isReplyEditStatus && (
-                <button
-                  onClick={handleModifyReply}
-                  disabled={comment ? false : true}
-                  className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                    comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
-                  } text-xs text-white rounded-[0.3rem]`}
-                >
-                  수정
-                </button>
-              )}
-            </div>
+            </>
           ) : (
-            <button
-              onClick={handleAddReply}
-              disabled={comment ? false : true}
-              className={`w-[3.75rem] py-[0.4rem] font-medium ${
-                comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
-              } text-xs text-white rounded-[0.3rem]`}
-            >
-              등록
-            </button>
+            <>
+              <textarea
+                ref={textareaRef}
+                placeholder='댓글을 작성해 주세요.'
+                value={comment}
+                className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar'
+                onChange={(e) => adjustHeight(e)}
+                onKeyDown={handleKeyDown}
+              />
+              {isCommentEditStatus || isReplyEditStatus ? (
+                <div className='flex items-center'>
+                  <button
+                    onClick={() => {
+                      setComment('');
+                      setIsCommentEditStatus(false);
+                      setIsReplyEditStatus(false);
+                    }}
+                    className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
+                  >
+                    취소
+                  </button>
+                  {isCommentEditStatus && (
+                    <button
+                      onClick={handleEditComment}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                          : 'bg-[#90c2ff]'
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
+                  {isReplyEditStatus && (
+                    <button
+                      onClick={handleModifyReply}
+                      disabled={comment ? false : true}
+                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                          : 'bg-[#90c2ff]'
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      수정
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddReply}
+                  disabled={comment ? false : true}
+                  className={`w-[3.75rem] py-[0.4rem] font-medium ${
+                    comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
+                  } text-xs text-white rounded-[0.3rem]`}
+                >
+                  등록
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -624,19 +746,21 @@ export default function CommunityPostComment(props: DefaultProps) {
 
             <div className='mt-2 flex flex-col gap-y-3 px-2'>
               <div className='flex flex-col items-start gap-y-1'>
-                <button
-                  onClick={() => {
-                    closeDrawer();
-                    setIsReplyEditStatus(false);
-                    setIsCommentEditStatus(true);
-                    setComment(selectedCommentInfo.commentContent);
-                  }}
-                  className='w-full py-2 flex items-center gap-x-2'
-                >
-                  <span className='relative flex items-center text-[0.825rem]'>
-                    수정하기
-                  </span>
-                </button>
+                {!postInfo.isPenalized && (
+                  <button
+                    onClick={() => {
+                      closeDrawer();
+                      setIsReplyEditStatus(false);
+                      setIsCommentEditStatus(true);
+                      setComment(selectedCommentInfo.commentContent);
+                    }}
+                    className='w-full py-2 flex items-center gap-x-2'
+                  >
+                    <span className='relative flex items-center text-[0.825rem]'>
+                      수정하기
+                    </span>
+                  </button>
+                )}
 
                 {matchedComment.replies.length === 0 && (
                   <button
@@ -753,6 +877,16 @@ export default function CommunityPostComment(props: DefaultProps) {
         }
         postId={postId}
         selectedReplyId={selectedReplyInfo.replyId}
+      />
+
+      <RestrictGuideModal
+        openRestrictGuideModal={openRestrictGuideModal}
+        setOpenRestrictGuideModal={setOpenRestrictGuideModal}
+      />
+
+      <DetectedBadWordGuideModal
+        openDetectedBadWordGuideModal={openDetectedBadWordGuideModal}
+        setOpenDetectedBadWordGuideModal={setOpenDetectedBadWordGuideModal}
       />
     </div>
   );

@@ -1,17 +1,15 @@
 'use client';
 
-import { PostInfo } from '@/types/post';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Toast } from 'flowbite-react';
 import ConfirmDeleteCommunityPostModal from './components/ConfirmDeleteCommunityPostModal';
 import Loading from '@/app/loading';
 import { partySelectedPlanInfos } from '@/data/partySelectedPlanInfos';
 import Link from 'next/link';
 import CommentList from './components/comment/CommentList';
-import { formatDate, formatDateAndTimeAgo } from '@/utils/formatDate';
+import { formatDate } from '@/utils/formatDate';
 import axiosInstance from '@/utils/axiosInstance';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import NotFound from '@/app/[...Not_found]/page';
@@ -21,6 +19,21 @@ import { AxiosError } from 'axios';
 import ConfirmDeleteCommunityPostCommentModal from './components/ConfirmDeleteCommunityPostCommentModal';
 import ConfirmDeleteCommunityPostReplyModal from './components/ConfirmDeleteCommunityPostReplyModal';
 import { ToastInfoStore } from '@/store/ToastInfo';
+import axiosAiServerInstance from '@/utils/axiosAIServerInstance';
+import { PostInfo } from '@/types/post';
+import cleanBotImg from '@/public/images/cleanBot.png';
+import RestrictGuideModal from './components/RestrictGuideModal';
+import DetectedBadWordGuideModal from './components/DetectedBadWordGuideModal';
+
+// 비속어 예측 API
+const fetchBadWordPrediction = (comment: string) => {
+  return axiosAiServerInstance.get(`/kr-bad-word-predict?q=${comment}`);
+};
+
+// 비속어 사용 내역 기록하기 API
+const logProfanityUsage = () => {
+  return axiosInstance.post(`/private/detected-bad-word`);
+};
 
 // 커뮤니티 게시글 정보 조회 API
 const fetchCommunityPostInfo = ({ queryKey }: any) => {
@@ -109,10 +122,51 @@ export default function CommunityPost(props: DefaultProps) {
     (state: any) => state.updateOpenToastStatus
   );
 
-  const { isPending, isError, data, error } = useQuery({
-    queryKey: ['communityPostInfo', postId],
-    queryFn: fetchCommunityPostInfo,
-    retry: 0,
+  const logProfanityUsageMutation = useMutation({
+    mutationFn: logProfanityUsage,
+    onMutate: () => {},
+    onError: (error: AxiosError) => {
+      // const resData: any = error.response;
+      // switch (resData?.status) {
+      //   case 409:
+      //     switch (resData?.data.error.status) {
+      //       case 'CONFLICT':
+      //         alert('이미 좋아요된 게시글입니다.');
+      //         break;
+      //       default:
+      //         alert('정의되지 않은 http code입니다.');
+      //     }
+      //     break;
+      //   default:
+      //     alert('정의되지 않은 http status code입니다');
+      // }
+    },
+    onSuccess: (data) => {
+      const httpStatusCode = data.status;
+
+      switch (httpStatusCode) {
+        case 200:
+          if (data.data === '비속어 사용 내역이 기록되었습니다.') {
+            setOpenDetectedBadWordGuideModal('default');
+            break;
+          }
+
+          if (
+            data.data ===
+            '비속어 사용 내역이 기록되었으며, 패널티가 부여되었습니다.'
+          ) {
+            setOpenRestrictGuideModal('default');
+          }
+          // 쿼리 데이터 업데이트
+          queryClient.invalidateQueries({
+            queryKey: ['communityPostInfo'],
+          });
+          break;
+        default:
+          alert('정의되지 않은 http status code입니다');
+      }
+    },
+    onSettled: () => {},
   });
 
   const doLikeCommunityPostMutation = useMutation({
@@ -305,9 +359,6 @@ export default function CommunityPost(props: DefaultProps) {
 
   const userInfo: UserInfo = UserInfoStore((state: any) => state.userInfo);
 
-  const resData = data?.data.response;
-  const postInfo: PostInfo = resData;
-
   const [isOpenPostManagingBottomDrawer, setIsOpenPostManagingBottomDrawer] =
     useState<boolean>(false);
   const [
@@ -331,6 +382,11 @@ export default function CommunityPost(props: DefaultProps) {
     openConfirmDeleteCommunityPostReplyModal,
     setOpenConfirmDeleteCommunityPostReplyModal,
   ] = useState<string | undefined>();
+  const [openRestrictGuideModal, setOpenRestrictGuideModal] = useState<
+    string | undefined
+  >();
+  const [openDetectedBadWordGuideModal, setOpenDetectedBadWordGuideModal] =
+    useState<string | undefined>();
 
   const [comment, setComment] = useState<string>('');
   const [isCommentEditStatus, setIsCommentEditStatus] =
@@ -350,6 +406,15 @@ export default function CommunityPost(props: DefaultProps) {
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { isPending, isError, data, error } = useQuery({
+    queryKey: ['communityPostInfo', postId],
+    queryFn: fetchCommunityPostInfo,
+    retry: 0,
+  });
+
+  const resData = data?.data.response;
+  const postInfo: PostInfo = resData;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -466,43 +531,28 @@ export default function CommunityPost(props: DefaultProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.key === 'Enter' &&
-      !isCommentEditStatus &&
-      !isReplyEditStatus
-    ) {
-      handleAddComment();
-      return;
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (!isCommentEditStatus && !isReplyEditStatus) {
+        // 댓글 추가
+        handleAddComment(); // 단축키로 댓글 등록 시 비속어 체크 후 등록
+        return;
+      }
 
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.key === 'Enter' &&
-      isCommentEditStatus &&
-      !isReplyEditStatus
-    ) {
-      handleModifyComment();
-      return;
-    }
+      if (isCommentEditStatus && !isReplyEditStatus) {
+        // 댓글 수정
+        handleModifyComment();
+        return;
+      }
 
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.key === 'Enter' &&
-      isReplyEditStatus &&
-      !isCommentEditStatus
-    ) {
-      handleModifyReply();
-      return;
+      if (isReplyEditStatus && !isCommentEditStatus) {
+        // 답글 수정
+        handleEditReply();
+        return;
+      }
     }
   };
 
-  const handleAddComment = () => {
-    if (comment) {
-      addCommunityPostCommentMutation.mutate({ postId, comment });
-    }
-  };
-
+  // 댓글 수정 처리 함수
   const handleModifyComment = () => {
     if (comment) {
       modifyCommunityPostCommentMutation.mutate({
@@ -512,12 +562,49 @@ export default function CommunityPost(props: DefaultProps) {
     }
   };
 
-  const handleModifyReply = () => {
+  const handleProfanityCheck = async (type: string) => {
+    try {
+      const response = await fetchBadWordPrediction(comment);
+      const result = response.data;
+
+      if (result.isProfanity) {
+        logProfanityUsageMutation.mutate();
+      } else {
+        switch (type) {
+          case 'add':
+            addCommunityPostCommentMutation.mutate({ postId, comment }); // 비속어가 없으면 바로 등록
+            break;
+          case 'edit':
+            modifyCommunityPostReplyMutation.mutate({
+              replyId: selectedReplyInfo.replyId,
+              comment,
+            });
+            break;
+          default:
+            break;
+        }
+      }
+    } catch (error: unknown) {
+      // 'unknown'을 처리
+      if (error instanceof AxiosError) {
+        // AxiosError인지 확인
+        console.log('Axios Error:', error.response?.data || error.message);
+      } else {
+        console.error('Unknown Error:', error);
+      }
+      alert('비속어 예측 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 댓글 등록 버튼 클릭 시 비속어 체크 및 댓글 등록 처리
+  const handleAddComment = () => {
     if (comment) {
-      modifyCommunityPostReplyMutation.mutate({
-        replyId: selectedReplyInfo.replyId,
-        comment,
-      });
+      handleProfanityCheck('add'); // 비속어 확인 후 댓글 등록
+    }
+  };
+  const handleEditReply = () => {
+    if (comment) {
+      handleProfanityCheck('edit'); // 비속어 확인 후 댓글 수정
     }
   };
 
@@ -851,6 +938,21 @@ export default function CommunityPost(props: DefaultProps) {
                 </span>
               </p>
 
+              <div className='my-3 p-3 rounded-[0.125rem] border flex items-center text-[#777777] text-xs gap-x-[0.1rem]'>
+                <Image
+                  src={cleanBotImg}
+                  alt='clean bot icon image'
+                  width={25}
+                  height={25}
+                  quality={100}
+                />
+
+                <span className='text-inherit'>
+                  <span className='text-[#5d7bf2] font-semibold'>클린봇</span>이
+                  악성 댓글 작성을 제한합니다.
+                </span>
+              </div>
+
               <CommentList
                 postId={postId}
                 comments={postInfo.comments}
@@ -868,63 +970,85 @@ export default function CommunityPost(props: DefaultProps) {
 
           <div className='w-[37.5rem] fixed bottom-0 bg-[#edeff1] px-4 py-[0.675rem]'>
             <div className='flex justify-between  items-center gap-x-2'>
-              <textarea
-                ref={textareaRef}
-                placeholder='댓글을 작성해 주세요.'
-                value={comment}
-                className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar'
-                onChange={(e) => adjustHeight(e)}
-                onKeyDown={handleKeyDown}
-              />
-              {isCommentEditStatus || isReplyEditStatus ? (
-                <div className='flex items-center'>
+              {postInfo.isPenalized ? (
+                <>
+                  <span className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar text-gray-400'>
+                    댓글 및 답글 작성이 제한된 상태입니다.
+                  </span>
                   <button
-                    onClick={() => {
-                      setComment('');
-                      setIsCommentEditStatus(false);
-                      setIsReplyEditStatus(false);
-                    }}
-                    className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
+                    disabled={true}
+                    className={`w-[3.75rem] py-[0.4rem] font-medium ${
+                      comment
+                        ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                        : 'bg-[#90c2ff]'
+                    } text-xs text-white rounded-[0.3rem]`}
                   >
-                    취소
+                    등록
                   </button>
-                  {isCommentEditStatus && (
-                    <button
-                      onClick={handleModifyComment}
-                      disabled={comment ? false : true}
-                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                        comment
-                          ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
-                          : 'bg-[#90c2ff]'
-                      } text-xs text-white rounded-[0.3rem]`}
-                    >
-                      수정
-                    </button>
-                  )}
-                  {isReplyEditStatus && (
-                    <button
-                      onClick={handleModifyReply}
-                      disabled={comment ? false : true}
-                      className={`w-[3.3rem] py-[0.4rem] font-medium ${
-                        comment
-                          ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
-                          : 'bg-[#90c2ff]'
-                      } text-xs text-white rounded-[0.3rem]`}
-                    >
-                      수정
-                    </button>
-                  )}
-                </div>
+                </>
               ) : (
-                <button
-                  onClick={handleAddComment}
-                  disabled={comment ? false : true}
-                  className={`w-[3.75rem] py-[0.4rem] font-medium ${
-                    comment ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]' : 'bg-[#90c2ff]'
-                  } text-xs text-white rounded-[0.3rem]`}
-                >
-                  등록
-                </button>
+                <>
+                  <textarea
+                    ref={textareaRef}
+                    placeholder='댓글을 작성해 주세요.'
+                    value={comment}
+                    className='w-full h-[2rem] max-h-[3.75rem] p-2 border-none focus:ring-0 font-light text-xs placeholder:text-[#88909a] bg-transparent resize-none comment-scrollbar'
+                    onChange={(e) => adjustHeight(e)}
+                    onKeyDown={handleKeyDown}
+                  />
+                  {isCommentEditStatus || isReplyEditStatus ? (
+                    <div className='flex items-center'>
+                      <button
+                        onClick={() => {
+                          setComment('');
+                          setIsCommentEditStatus(false);
+                          setIsReplyEditStatus(false);
+                        }}
+                        className={`w-[3.3rem] py-[0.4rem] font-medium text-[#3a8af9] text-xs rounded-[0.3rem]`}
+                      >
+                        취소
+                      </button>
+                      {isCommentEditStatus && (
+                        <button
+                          onClick={handleModifyComment}
+                          disabled={comment ? false : true}
+                          className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                            comment
+                              ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                              : 'bg-[#90c2ff]'
+                          } text-xs text-white rounded-[0.3rem]`}
+                        >
+                          수정
+                        </button>
+                      )}
+                      {isReplyEditStatus && (
+                        <button
+                          onClick={handleEditReply}
+                          disabled={comment ? false : true}
+                          className={`w-[3.3rem] py-[0.4rem] font-medium ${
+                            comment
+                              ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                              : 'bg-[#90c2ff]'
+                          } text-xs text-white rounded-[0.3rem]`}
+                        >
+                          수정
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleAddComment}
+                      disabled={comment ? false : true}
+                      className={`w-[3.75rem] py-[0.4rem] font-medium ${
+                        comment
+                          ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
+                          : 'bg-[#90c2ff]'
+                      } text-xs text-white rounded-[0.3rem]`}
+                    >
+                      등록
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -977,17 +1101,19 @@ export default function CommunityPost(props: DefaultProps) {
 
             <div className='mt-2 flex flex-col gap-y-3 px-2'>
               <div className='flex flex-col items-start gap-y-1'>
-                <button
-                  onClick={() => {
-                    closeDrawer();
-                    router.push(`/community/post/${postId}/edit`);
-                  }}
-                  className='w-full py-2 flex items-center gap-x-2'
-                >
-                  <span className='relative flex items-center text-[0.825rem]'>
-                    수정하기
-                  </span>
-                </button>
+                {postInfo.isPenalized && (
+                  <button
+                    onClick={() => {
+                      closeDrawer();
+                      router.push(`/community/post/${postId}/edit`);
+                    }}
+                    className='w-full py-2 flex items-center gap-x-2'
+                  >
+                    <span className='relative flex items-center text-[0.825rem]'>
+                      수정하기
+                    </span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
@@ -1190,6 +1316,16 @@ export default function CommunityPost(props: DefaultProps) {
         }
         postId={postId}
         selectedReplyId={selectedReplyInfo.replyId}
+      />
+
+      <RestrictGuideModal
+        openRestrictGuideModal={openRestrictGuideModal}
+        setOpenRestrictGuideModal={setOpenRestrictGuideModal}
+      />
+
+      <DetectedBadWordGuideModal
+        openDetectedBadWordGuideModal={openDetectedBadWordGuideModal}
+        setOpenDetectedBadWordGuideModal={setOpenDetectedBadWordGuideModal}
       />
     </div>
   );

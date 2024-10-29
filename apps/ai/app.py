@@ -2,9 +2,11 @@ from flask import Flask, request, jsonify
 import joblib
 import re
 import logging
+from flask_cors import CORS  # CORS 임포트
 
 # Flask 애플리케이션 생성
 app = Flask(__name__)
+CORS(app)  # CORS 적용
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -25,16 +27,13 @@ def preprocess_text(text):
     text = re.sub(r'[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9 ]', '', text)
     return text
 
-@app.route('/kr-bad-word-predict', methods=['POST'])
+@app.route('/kr-bad-word-predict', methods=['GET'])
 def predict():
     if not svm_model or not vectorizer:
         return jsonify({'error': '모델 또는 벡터화기가 제대로 로드되지 않았습니다.'}), 500
 
-    if request.content_type != 'application/json':
-        return jsonify({'error': 'Content-Type은 application/json이어야 합니다.'}), 400
-
-    data = request.json
-    text = data.get('text', '')
+    # 쿼리 파라미터에서 'text' 값 가져오기
+    text = request.args.get('q', '')
 
     # 텍스트 전처리
     preprocessed_text = preprocess_text(text)
@@ -54,7 +53,7 @@ def predict():
         logging.error(f"예측 중 오류 발생: {e}")
         return jsonify({'error': '예측에 실패했습니다.'}), 500
 
-    return jsonify({'text': text, 'is_profanity': is_profanity})
+    return jsonify({'text': text, 'isProfanity': is_profanity})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5050)

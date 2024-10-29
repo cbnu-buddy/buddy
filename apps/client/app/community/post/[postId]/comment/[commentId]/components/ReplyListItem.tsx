@@ -3,7 +3,6 @@ import { ReplyInfo } from '@/types/reply';
 import { UserInfo } from '@/types/user';
 import { formatDateAndTimeAgo } from '@/utils/formatDate';
 import Image from 'next/image';
-import Link from 'next/link';
 import React from 'react';
 
 interface ReplyListItemProps {
@@ -31,16 +30,22 @@ export default function ReplyListItem(props: ReplyListItemProps) {
       <div className='w-full flex flex-col gap-y-2'>
         <div className='flex justify-between items-center'>
           <div className='flex items-center gap-x-[0.375rem]'>
-            <div className='relative w-[30px] h-[30px]'>
-              <Image
-                src={replyInfo.writer.profileImagePathUrl}
-                alt='profileImage'
-                fill
-                quality={100}
-                className='rounded-full'
-              />
-            </div>
-            <span className='text-[0.825rem] text-[#333d4b] font-medium'>
+            {replyInfo.writer.profileImagePathUrl ? (
+              <div className='relative w-[30px] h-[30px]'>
+                <Image
+                  src={replyInfo.writer.profileImagePathUrl}
+                  alt='profileImage'
+                  fill
+                  quality={100}
+                  className='rounded-full'
+                />
+              </div>
+            ) : (
+              <span className='w-[30px] h-[30px] flex justify-center items-center bg-[#eee] text-[#4e5968] font-medium rounded-full'>
+                {replyInfo.writer.username.charAt(0)}
+              </span>
+            )}
+            <span className='text-xs text-[#4e5968]'>
               {replyInfo.writer.username}
             </span>
           </div>
