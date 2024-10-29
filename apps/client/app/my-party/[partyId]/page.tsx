@@ -19,7 +19,6 @@ import { formatDate } from '@/utils/formatDate';
 import Loading from '@/app/loading';
 import questionMarkImg from '@/public/images/question_mark.png';
 import { UserInfoStore } from '@/store/UserInfo';
-import { Toast } from 'flowbite-react';
 
 import ModifyLeaderAccountInfoModal from './components/ModifyLeaderAccountInfoModal';
 import ModifyPartyRecruitmentNumModal from './components/ModifyPartyRecruitmentNumModal';
@@ -102,11 +101,11 @@ export default function PartyDetail() {
   ] = useState(false);
   const [isDropdownMousedown, setIsDropdownMousedown] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [copyType, setCopyType] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isClickedShowLeaderAccountInfo, setIsClickedShowLeaderAccountInfo] =
     useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [copyType, setCopyType] = useState('');
   const [openLeavePartyModal, setOpenLeavePartyModal] = useState<
     string | undefined
   >();
@@ -121,8 +120,6 @@ export default function PartyDetail() {
     openModifyPartyRecruitmentNumModal,
     setOpenModifyPartyRecruitmentNumModal,
   ] = useState<string | undefined>();
-  const [isToastClosing, setIsToastClosing] = useState(false);
-  const [isOpenCopyCompleteToast, setIsOpenCopyCompleteToast] = useState(false);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -151,24 +148,6 @@ export default function PartyDetail() {
       });
     };
   }, [isDropdownOpen]);
-
-  useEffect(() => {
-    if (isOpenCopyCompleteToast) {
-      const fadeOutTimer = setTimeout(() => {
-        setIsToastClosing(true);
-      }, 3000); // 3초 후에 toast-fade-out 클래스 추가
-
-      const closeTimer = setTimeout(() => {
-        setIsOpenCopyCompleteToast(false);
-        setIsToastClosing(false);
-      }, 4500); // 4.5초 후에 토스트 닫기
-
-      return () => {
-        clearTimeout(fadeOutTimer);
-        clearTimeout(closeTimer);
-      };
-    }
-  }, [isOpenCopyCompleteToast]);
 
   const daysUntilNextMonth = calculateDaysUntilNextMonth();
   const today = new Date();
@@ -498,29 +477,6 @@ export default function PartyDetail() {
                 )
               ) : (
                 <></>
-              )}
-
-              {isOpenCopyCompleteToast && (
-                <Toast
-                  className={`w-[15rem] fixed bottom-14 left-14 bg-[#222222] py-3 ${
-                    isToastClosing ? 'toast-fade-out' : 'toast-fade-in'
-                  }`}
-                >
-                  <div className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-green-500 dark:bg-green-800 dark:text-green-200'>
-                    <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      height='27.5px'
-                      viewBox='0 -960 960 960'
-                      width='27.5px'
-                      fill='#75d5ad'
-                    >
-                      <path d='m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z' />
-                    </svg>
-                  </div>
-                  <div className='ml-1 text-[0.825rem] font-medium text-white'>
-                    {copyType}가 복사되었습니다.
-                  </div>
-                </Toast>
               )}
 
               {isClickedShowLeaderAccountInfo && (

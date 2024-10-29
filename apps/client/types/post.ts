@@ -20,6 +20,7 @@ export interface PostInfo {
   comments: CommentInfo[];
   likeCount: number;
   isLiked: boolean;
+  isPenalized: boolean;
 }
 
 export interface Author {

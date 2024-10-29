@@ -1,7 +1,7 @@
-import React from "react";
-import EmptyCommentListItem from "./EmptyCommentListItem";
-import { CommentInfo } from "@/types/comment";
-import CommentListItem from "./CommentListItem";
+import React from 'react';
+import EmptyCommentListItem from './EmptyCommentListItem';
+import { CommentInfo } from '@/types/comment';
+import CommentListItem from './CommentListItem';
 
 interface CommentListProps {
   postId: string;
@@ -29,7 +29,7 @@ function CommentList({
   setIsOpenReplyManagingBottomDrawer,
 }: CommentListProps) {
   return (
-    <div className="mt-5 flex flex-col gap-y-[0.7rem]">
+    <div className='mt-2 flex flex-col gap-y-[0.7rem]'>
       {comments?.length === 0 && <EmptyCommentListItem />}
       {comments?.map((commentInfo: CommentInfo, index: number) => (
         <CommentListItem

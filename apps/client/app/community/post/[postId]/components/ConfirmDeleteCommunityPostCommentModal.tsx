@@ -48,6 +48,9 @@ export default function ConfirmDeleteCommunityPostCommentModal({
       switch (resData?.status) {
         case 409:
           switch (resData?.data.error.status) {
+            case 'CONFLICT':
+              alert('답글이 등록된 댓글은 제거할 수 없어요');
+              break;
             default:
               alert('정의되지 않은 http code입니다.');
           }
