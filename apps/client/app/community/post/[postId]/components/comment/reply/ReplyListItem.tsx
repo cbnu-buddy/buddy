@@ -6,7 +6,6 @@ import { formatDateAndTimeAgo } from '@/utils/formatDate';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import Image from 'next/image';
-import React, { useState } from 'react';
 
 // 커뮤니티 답글 좋아요 API
 const doLikeReply = (replyId: number) => {
