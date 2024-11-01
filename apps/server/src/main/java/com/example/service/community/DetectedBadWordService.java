@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -58,15 +60,26 @@ public class DetectedBadWordService {
     detectedBadWord.setCreatedTime(LocalDateTime.now());
     detectedBadWordsRepository.save(detectedBadWord);
 
-    // 비속어 사용 횟수 확인 및 패널티 적용
+    // 비속어 사용 횟수 확인
     long usageCount = detectedBadWordsRepository.countByMemberId(memberId);
-    if (usageCount % 4 == 0) {
+
+    // 패널티 적용 여부 확인 (4의 배수마다 적용)
+    boolean isPenalized = usageCount % 4 == 0;
+    if (isPenalized) {
       applyPenalty(memberId);
-      return ApiResult.success("비속어 사용 내역이 기록되었으며, 패널티가 부여되었습니다.");
     }
 
-    return ApiResult.success("비속어 사용 내역이 기록되었습니다.");
+    // 응답 메시지와 isPenalized 필드를 포함하는 결과 생성
+    String message = isPenalized
+      ? "비속어 사용 내역이 기록되었으며, 패널티가 부여되었습니다."
+      : "비속어 사용 내역이 기록되었습니다.";
+    Map<String, Object> result = new HashMap<>();
+    result.put("message", message);
+    result.put("isPenalized", isPenalized);
+
+    return ApiResult.success(result);
   }
+
 
   /*
    * 패널티 부여 로직
