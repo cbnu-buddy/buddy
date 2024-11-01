@@ -143,20 +143,18 @@ export default function CommunityPost(props: DefaultProps) {
     },
     onSuccess: (data) => {
       const httpStatusCode = data.status;
+      const isPenalized = data.data.response.isPenalized;
 
       switch (httpStatusCode) {
         case 200:
-          if (data.data === '비속어 사용 내역이 기록되었습니다.') {
-            setOpenDetectedBadWordGuideModal('default');
-            break;
-          }
-
-          if (
-            data.data ===
-            '비속어 사용 내역이 기록되었으며, 패널티가 부여되었습니다.'
-          ) {
+          if (isPenalized) {
             setOpenRestrictGuideModal('default');
           }
+
+          if (!isPenalized) {
+            setOpenDetectedBadWordGuideModal('default');
+          }
+
           // 쿼리 데이터 업데이트
           queryClient.invalidateQueries({
             queryKey: ['communityPostInfo'],
@@ -977,11 +975,7 @@ export default function CommunityPost(props: DefaultProps) {
                   </span>
                   <button
                     disabled={true}
-                    className={`w-[3.75rem] py-[0.4rem] font-medium ${
-                      comment
-                        ? 'bg-[#3a8af9] hover:bg-[#1c6cdb]'
-                        : 'bg-[#90c2ff]'
-                    } text-xs text-white rounded-[0.3rem]`}
+                    className={`w-[3.75rem] py-[0.4rem] font-medium bg-[#90c2ff] text-xs text-white rounded-[0.3rem]`}
                   >
                     등록
                   </button>
